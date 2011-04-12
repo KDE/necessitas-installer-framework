@@ -1,4 +1,7 @@
 TEMPLATE = lib
+CONFIG -=dll
+CONFIG +=static
+
 TARGET = installer
 DEPENDPATH += . \
     .. \
