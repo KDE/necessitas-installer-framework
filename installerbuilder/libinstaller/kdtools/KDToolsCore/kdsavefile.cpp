@@ -29,6 +29,9 @@
 
 #ifdef Q_OS_WIN
 # include <io.h>
+#ifdef __GNUC__
+# include <share.h>
+#endif
 #endif
 #include <memory>
 #include <sys/stat.h>

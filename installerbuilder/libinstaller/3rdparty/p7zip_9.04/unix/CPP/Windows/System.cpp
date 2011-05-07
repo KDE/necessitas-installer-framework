@@ -1,3 +1,8 @@
+#if defined(WIN32) && defined(__GNUC__)
+#define _WIN32_WINNT 0x0500
+#include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,7 +23,6 @@
 #if defined(ENV_BEOS)
 #include <be/kernel/OS.h>
 #endif
-
 
 #include "Common/Types.h"
 

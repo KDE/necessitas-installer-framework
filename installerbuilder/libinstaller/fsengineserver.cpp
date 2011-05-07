@@ -102,7 +102,7 @@ bool startDetached( const QString& program, const QStringList& args, const QStri
                                      static_cast< ulong >( CW_USEDEFAULT ), static_cast< ulong >( CW_USEDEFAULT ),
                                      0, 0, 0, STARTF_USESHOWWINDOW, SW_HIDE, 0, 0, 0, 0, 0
                                    };
-        const bool success = CreateProcess( 0, const_cast< wchar_t* >( static_cast< const wchar_t* >( arguments.utf16() ) ),
+        const bool success = CreateProcess( 0, const_cast< wchar_t* >( reinterpret_cast< const wchar_t* >( arguments.utf16() ) ),
                                             0, 0, FALSE, CREATE_UNICODE_ENVIRONMENT | CREATE_NEW_CONSOLE,
                                             0, (wchar_t*)workingDirectory.utf16(),
                                             &startupInfo, &pinfo );
