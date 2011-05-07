@@ -44,6 +44,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDir>
+#include <QDirIterator>
 #include <QDebug>
 
 
@@ -131,140 +132,111 @@ void QtPatchOperation::backup()
 bool QtPatchOperation::performOperation()
 {
     // Arguments:
-    // 1. type
-    // 2. new/target qtpath
+    // 1. new/target qtpath
+    // 2. old qtpath (optional)
 
-    if( arguments().count() != 2 ) {
+    if( arguments().count() < 1 ) {
         setError( InvalidArguments );
-        setErrorString( tr("Invalid arguments in %0: %1 arguments given, 2 expected.")
+        setErrorString( tr("Invalid arguments in %0: %1 arguments given, at least 1 expected.")
                         .arg(name()).arg( arguments().count() ) );
         return false;
     }
 
-    QString type = arguments().at(0);
-
-    bool isPlatformSupported = type.contains(QLatin1String("linux"), Qt::CaseInsensitive) ||
-                               type.contains(QLatin1String("windows"), Qt::CaseInsensitive) ||
-                               type.contains(QLatin1String("mac"), Qt::CaseInsensitive);
-    if (!isPlatformSupported)
-    {
-        setError( InvalidArguments );
-        setErrorString( tr("First argument should be 'linux', 'mac' or 'windows'. No other type is supported at this time.") );
-        return false;
-    }
-    const QString newQtPathStr = QDir::toNativeSeparators( arguments().at(1) );
+    const QString newQtPathStr = QDir::toNativeSeparators( arguments().at(0) );
     const QByteArray newQtPath = newQtPathStr.toUtf8();
 
-    QString qmakePath = QString::fromUtf8(newQtPath) + QLatin1String("/bin/qmake");
-#ifdef Q_OS_WIN
-    qmakePath = qmakePath + QLatin1String(".exe");
-#endif
-
-    if (!QFile::exists(qmakePath))
-    {
-        setError( UserDefinedError );
-        setErrorString( tr("QMake from the current Qt version \n(%1)"  \
-                           "is not existing. Please make a bugreport with this dialog at http://bugreports.qt.nokia.com.\n" \
-                           ).arg(QDir::toNativeSeparators(qmakePath)));
-        return false;
-    }
-
-    QByteArray qmakeOutput;
-    QHash<QString, QByteArray> qmakeValueHash = QtPatch::qmakeValues(qmakePath, &qmakeOutput);
-
-    if (qmakeValueHash.isEmpty())
-    {
-        setError( UserDefinedError );
-        setErrorString( tr("The output of \n%1 -query\n"  \
-                           "is not parseable. Please make a bugreport with this dialog http://bugreports.qt.nokia.com.\n" \
-                           "output: \"%2\"").arg(QDir::toNativeSeparators(qmakePath), QString::fromUtf8(qmakeOutput)));
-        return false;
-    }
-
-    const QByteArray oldQtPath = qmakeValueHash.value( QLatin1String("QT_INSTALL_PREFIX") );
-    bool oldQtPathFromQMakeIsEmpty = oldQtPath.isEmpty();
-
-    //maybe we don't need this, but I 255 should be a rational limit
-    if (255 < newQtPath.size()) {
-        setError( UserDefinedError );
-        setErrorString( tr("Qt patch error: new Qt dir(%1)\n" \
-                           "needs to be less than 255 characters.").arg(newQtPathStr) );
-        return false;
-    }
-
-    QFile patchFileListFile;
-    if( type == QLatin1String("windows") )
-        patchFileListFile.setFileName( QLatin1String(":/files-to-patch-windows") );
-    else if( type == QLatin1String("linux") )
-        patchFileListFile.setFileName( QLatin1String(":/files-to-patch-linux") );
-    else if (type == QLatin1String("mac"))
-        patchFileListFile.setFileName( QLatin1String(":/files-to-patch-macx") );
-
-    if (! patchFileListFile.open(QFile::ReadOnly)) {
-        setError( UserDefinedError );
-        setErrorString( tr("Qt patch error: Can not open %1.").arg(patchFileListFile.fileName()) );
-        return false;
-    }
-
-    QStringList filesToPatch, textFilesToPatch;
-    bool readingTextFilesToPatch = false;
-
-    // read the input file
-    QTextStream in(&patchFileListFile);
-
-    forever {
-        const QString line = in.readLine();
-
-        if (line.isNull())
-            break;
-
-        else if (line.isEmpty())
-            continue;
-
-        else if (line.startsWith(QLatin1String("%%")))
-            readingTextFilesToPatch = true;
-
-        //with empty old path we don't know what we want to replace
-        else if (readingTextFilesToPatch && !oldQtPathFromQMakeIsEmpty)
-            textFilesToPatch.append(line);
-
-        else
-            filesToPatch.append(line);
-    }
-
+    QByteArray oldQtPath;
     QString prefix = QFile::decodeName(newQtPath);
 
     if (! prefix.endsWith(QLatin1Char('/')) )
         prefix += QLatin1Char('/');
 
-//BEGIN - patch binary files
-    QMap<QByteArray, QByteArray> patchValueMap = generatePatchValueMap(newQtPath, qmakeValueHash);
+    if( arguments().count()==1)
+    {
+        QString qmakePath = QString::fromUtf8(newQtPath) + QLatin1String("/bin/qmake");
+    #ifdef Q_OS_WIN
+        qmakePath = qmakePath + QLatin1String(".exe");
+    #endif
 
-    foreach (QString fileName, filesToPatch) {
-        fileName.prepend(prefix);
-        QFile file(fileName);
-
-        //without a file we can't do anything
-        if (!file.exists()) {
-            continue;
-        }
-
-        if (!QtPatch::openFileForPatching(&file)) {
+        if (!QFile::exists(qmakePath))
+        {
             setError( UserDefinedError );
-            setErrorString( tr("Qt patch error: Can not open %1(%2).").arg(file.fileName()).arg(file.errorString()) );
+            setErrorString( tr("QMake from the current Qt version \n(%1)"  \
+                               "is not existing. Please make a bugreport with this dialog at http://bugreports.qt.nokia.com.\n" \
+                               ).arg(QDir::toNativeSeparators(qmakePath)));
             return false;
         }
 
-        QMapIterator<QByteArray, QByteArray> it(patchValueMap);
-        while(it.hasNext()) {
-            it.next();
-            bool isPatched = QtPatch::patchBinaryFile(&file, it.key(), it.value());
-            if (!isPatched) {
-                QInstaller::verbose() << "qpatch: warning: file '" << qPrintable(fileName) << "' could not patched" << std::endl;
-            }
+        QByteArray qmakeOutput;
+        QHash<QString, QByteArray> qmakeValueHash = QtPatch::qmakeValues(qmakePath, &qmakeOutput);
+
+        if (qmakeValueHash.isEmpty())
+        {
+            setError( UserDefinedError );
+            setErrorString( tr("The output of \n%1 -query\n"  \
+                               "is not parseable. Please make a bugreport with this dialog http://bugreports.qt.nokia.com.\n" \
+                               "output: \"%2\"").arg(QDir::toNativeSeparators(qmakePath), QString::fromUtf8(qmakeOutput)));
+            return false;
         }
-    } //foreach (QString fileName, filesToPatch)
-//END - patch binary files
+
+        oldQtPath = qmakeValueHash.value( QLatin1String("QT_INSTALL_PREFIX") );
+        if (oldQtPath.isEmpty())
+        {
+            setError( UserDefinedError );
+            setErrorString( tr("The installer was not able to get the unpatched path from \n%1.(maybe it is broken or removed)\n"  \
+                               "It tried to patch the Qt binaries, but all other files in Qt are unpatched.\n" \
+                               "This could result in a broken Qt version.\n" \
+                               "Sometimes it helps to restart the installer with a switched off antivirus software."
+                               ).arg(QDir::toNativeSeparators(qmakePath)));
+            return false;
+        }
+
+        //maybe we don't need this, but I 255 should be a rational limit
+        if (255 < newQtPath.size()) {
+            setError( UserDefinedError );
+            setErrorString( tr("Qt patch error: new Qt dir(%1)\n" \
+                               "needs to be less than 255 characters.").arg(newQtPathStr) );
+            return false;
+        }
+
+        QStringList filesToPatch;
+        filesToPatch<<QLatin1String("bin/qmake")<<QLatin1String("bin/lrelease")
+    #ifdef Q_OS_WIN
+           QLatin1String(".exe");
+    #endif
+        ;
+
+    //BEGIN - patch binary files
+        QMap<QByteArray, QByteArray> patchValueMap = generatePatchValueMap(newQtPath, qmakeValueHash);
+
+        foreach (QString fileName, filesToPatch) {
+            fileName.prepend(prefix);
+            QFile file(fileName);
+
+            //without a file we can't do anything
+            if (!file.exists()) {
+                continue;
+            }
+
+            if (!QtPatch::openFileForPatching(&file)) {
+                setError( UserDefinedError );
+                setErrorString( tr("Qt patch error: Can not open %1(%2).").arg(file.fileName()).arg(file.errorString()) );
+                return false;
+            }
+
+            QMapIterator<QByteArray, QByteArray> it(patchValueMap);
+            while(it.hasNext()) {
+                it.next();
+                bool isPatched = QtPatch::patchBinaryFile(&file, it.key(), it.value());
+                if (!isPatched) {
+                    QInstaller::verbose() << "qpatch: warning: file '" << qPrintable(fileName) << "' could not patched" << std::endl;
+                }
+            }
+        } //foreach (QString fileName, filesToPatch)
+    //END - patch binary files
+    }
+    else
+        oldQtPath = arguments().at(1).toUtf8();
 
 //BEGIN - patch text files
     QByteArray newQtPathWithNormalSlashes = QDir::fromNativeSeparators(newQtPathStr).toUtf8();
@@ -294,9 +266,10 @@ bool QtPatchOperation::performOperation()
         searchReplacePairs = tempSearchReplacePairs;
     }
 #endif
-
-    foreach (QString fileName, textFilesToPatch) {
-        fileName.prepend(prefix);
+    QDirIterator textFilesIterator( prefix, QStringList()<<QLatin1String("*.pc")<<QLatin1String("*.la")<<QLatin1String("*.prl")<<QLatin1String("*.prf"), QDir::Files, QDirIterator::Subdirectories );
+    QString fileName;
+    while(textFilesIterator.hasNext()) {
+        fileName=textFilesIterator.next();
 
         if (QFile::exists(fileName)) {
             //TODO: use the return value for an error message at the end of the operation
@@ -318,17 +291,6 @@ bool QtPatchOperation::performOperation()
         return false;
     }
 #endif
-    if (oldQtPathFromQMakeIsEmpty)
-    {
-        setError( UserDefinedError );
-        setErrorString( tr("The installer was not able to get the unpatched path from \n%1.(maybe it is broken or removed)\n"  \
-                           "It tried to patch the Qt binaries, but all other files in Qt are unpatched.\n" \
-                           "This could result in a broken Qt version.\n" \
-                           "Sometimes it helps to restart the installer with a switched off antivirus software."
-                           ).arg(QDir::toNativeSeparators(qmakePath)));
-        return false;
-    }
-
     return true;
 }
 
