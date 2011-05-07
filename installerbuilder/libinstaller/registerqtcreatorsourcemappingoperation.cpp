@@ -1,4 +1,5 @@
 #include "registerqtcreatorsourcemappingoperation.h"
+
 #include <QSettings>
 
 using namespace QInstaller;
@@ -6,6 +7,10 @@ using namespace QInstaller;
 RegisterQtCreatorSourceMappingOperation::RegisterQtCreatorSourceMappingOperation()
 {
     setName(QLatin1String("RegisterQtCreatorSourceMapping"));
+}
+
+void RegisterQtCreatorSourceMappingOperation::backup()
+{
 }
 
 bool RegisterQtCreatorSourceMappingOperation::performOperation()
