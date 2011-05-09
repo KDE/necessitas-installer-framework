@@ -1,8 +1,21 @@
+/*
+I BogDan Vatra < bog_dan_ro@yahoo.com >, the copyright holder of this work,
+hereby release it into the public domain. This applies worldwide.
+
+In case this is not legally possible, I grant any entity the right to use
+this work for any purpose, without any conditions, unless such conditions
+are required by law.
+*/
+
 #include "registerqtcreatorsourcemappingoperation.h"
 
 #include <QSettings>
 
 using namespace QInstaller;
+
+static const QLatin1String sourcePathMappingArrayName("SourcePathMappings");
+static const QLatin1String sourcePathMappingSourceKey("Source");
+static const QLatin1String sourcePathMappingTargetKey("Target");
 
 RegisterQtCreatorSourceMappingOperation::RegisterQtCreatorSourceMappingOperation()
 {
@@ -37,18 +50,35 @@ bool RegisterQtCreatorSourceMappingOperation::performOperation()
     QSettings settings( iniFileLocation.arg(rootInstallPath),
                         QSettings::IniFormat );
 
-    settings.beginGroup(QLatin1String("SourcePathMappings"));
-    int size=settings.value(QLatin1String("size")).toInt();
-    for (int i=0;i<size;i++)
+    QMap<QString, QString> sourcePathMap;
+    if (const int count = settings.beginReadArray(sourcePathMappingArrayName))
     {
-        if (settings.value(QString(QLatin1String("%1\\Source")).arg(i)).toString()==oldPath ||
-                settings.value(QString(QLatin1String("%1\\Target")).arg(i)).toString()==newPath)
-            return true;
+        for (int i = 0; i < count; ++i)
+        {
+            const QString source = settings.value(sourcePathMappingSourceKey).toString();
+            const QString target = settings.value(sourcePathMappingTargetKey).toString();
+            settings.setArrayIndex(i);
+            if (source==oldPath || target==newPath)
+                return true;
+            sourcePathMap.insert(source, target);
+        }
     }
-    settings.setValue(QString(QLatin1String("%1\\Source")).arg(size+1), oldPath);
-    settings.setValue(QString(QLatin1String("%1\\Target")).arg(size+1), newPath);
-    settings.setValue(QLatin1String("size"), size+1);
-    settings.endGroup();
+    settings.endArray();
+
+    sourcePathMap.insert(oldPath, newPath);
+    settings.beginWriteArray(sourcePathMappingArrayName);
+    if (!sourcePathMap.isEmpty())
+    {
+        int i = 0;
+        const QMap<QString, QString>::const_iterator cend = sourcePathMap.constEnd();
+        for (QMap<QString, QString>::const_iterator it = sourcePathMap.constBegin(); it != cend; ++it, ++i)
+        {
+            settings.setArrayIndex(i);
+            settings.setValue(sourcePathMappingSourceKey, it.key());
+            settings.setValue(sourcePathMappingTargetKey, it.value());
+        }
+    }
+    settings.endArray();
     return true;
 }
 
