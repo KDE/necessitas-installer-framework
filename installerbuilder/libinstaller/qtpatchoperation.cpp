@@ -202,7 +202,7 @@ bool QtPatchOperation::performOperation()
         QStringList filesToPatch;
         filesToPatch<<QLatin1String("bin/qmake")<<QLatin1String("bin/lrelease")
     #ifdef Q_OS_WIN
-           QLatin1String(".exe");
+           <<QLatin1String(".exe");
     #endif
         ;
 
