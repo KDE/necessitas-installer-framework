@@ -40,7 +40,11 @@ bool KDLockFile::Private::lock()
 
     errorString.clear();
     errno = 0;
+#ifdef Q_OS_LINUX
+    handle = open( filename.toLatin1().constData(), O_CREAT | O_RDWR | O_NONBLOCK, S_IRUSR|S_IWUSR );
+#else
     handle = open( filename.toLatin1().constData(), O_CREAT | O_RDWR | O_NONBLOCK );
+#endif
     if ( handle == -1 ) {
         errorString = QObject::tr("Could not create lock file %1: %2").arg( filename, QLatin1String( strerror( errno ) ) ); 
         return false;
