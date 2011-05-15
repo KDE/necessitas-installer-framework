@@ -55,9 +55,9 @@ bool RegisterQtCreatorSourceMappingOperation::performOperation()
     {
         for (int i = 0; i < count; ++i)
         {
+            settings.setArrayIndex(i);
             const QString source = settings.value(sourcePathMappingSourceKey).toString();
             const QString target = settings.value(sourcePathMappingTargetKey).toString();
-            settings.setArrayIndex(i);
             if (source==oldPath || target==newPath)
                 return true;
             sourcePathMap.insert(source, target);
