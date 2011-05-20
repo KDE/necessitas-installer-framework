@@ -143,7 +143,7 @@ QtInstallerGui::QtInstallerGui(QInstaller::Installer *installer)
     //addPage(new QInstaller::TargetDirectoryPage(installer));
     setPage( QInstaller::Installer::TargetDirectory, new TargetDirectoryPageImpl( installer ) );
     setPage( QInstaller::Installer::ComponentSelection, new QInstaller::ComponentSelectionPage( m_installer ) );
-    setPage( QInstaller::Installer::LicenseCheck, new QInstaller::LicenseAgreementPage( installer ) );
+    //setPage( QInstaller::Installer::LicenseCheck, new QInstaller::LicenseAgreementPage( installer ) );
 #ifdef Q_OS_WIN
     setPage( QInstaller::Installer::StartMenuSelection, new QInstaller::StartMenuDirectoryPage( installer ) );
 #endif
@@ -174,7 +174,7 @@ QtUninstallerGui::QtUninstallerGui(QInstaller::Installer *installer)
 {
     setPage(QInstaller::Installer::ComponentSelection,
         new QInstaller::ComponentSelectionPage(m_installer));
-    setPage(QInstaller::Installer::LicenseCheck, new QInstaller::LicenseAgreementPage(installer));
+    //setPage(QInstaller::Installer::LicenseCheck, new QInstaller::LicenseAgreementPage(installer));
     setPage(QInstaller::Installer::ReadyForInstallation,
         new QInstaller::ReadyForInstallationPage(installer));
     setPage(QInstaller::Installer::PerformInstallation,
