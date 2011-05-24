@@ -200,11 +200,11 @@ bool QtPatchOperation::performOperation()
         }
 
         QStringList filesToPatch;
-        filesToPatch<<QLatin1String("bin/qmake")<<QLatin1String("bin/lrelease")
-    #ifdef Q_OS_WIN
-           <<QLatin1String(".exe");
-    #endif
-        ;
+#ifdef Q_OS_WIN
+        filesToPatch<<QLatin1String("bin/qmake.exe")<<QLatin1String("bin/lrelease.exe");
+#else
+        filesToPatch<<QLatin1String("bin/qmake")<<QLatin1String("bin/lrelease");
+#endif
 
     //BEGIN - patch binary files
         QMap<QByteArray, QByteArray> patchValueMap = generatePatchValueMap(newQtPath, qmakeValueHash);
