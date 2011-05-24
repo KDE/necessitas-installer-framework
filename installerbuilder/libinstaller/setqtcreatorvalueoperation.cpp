@@ -82,7 +82,7 @@ bool SetQtCreatorValueOperation::performOperation()
     const QString &value = args.at(3);
 
 #if defined(Q_OS_MAC)
-    QString iniFileLocation = QLatin1String("%1/Qt Creator.app/Contents/Resources/Nokia/QtCreator.ini");
+    QString iniFileLocation = QLatin1String("%1/NecessitasQtCreator.app/Contents/Resources/Nokia/QtCreator.ini");
 #else
     QString iniFileLocation = QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini");
 #endif

@@ -87,7 +87,7 @@ bool RegisterQtInCreatorOperation::performOperation()
         sbsPath = args.at(8);
 
 #if defined ( Q_OS_MAC )
-    QSettings settings( QString( QLatin1String("%1/Qt Creator.app/Contents/Resources/Nokia/QtCreator.ini")
+    QSettings settings( QString( QLatin1String("%1/NecessitasQtCreator.app/Contents/Resources/Nokia/QtCreator.ini")
                                  ).arg(rootInstallPath),
                          QSettings::IniFormat );
 #else
