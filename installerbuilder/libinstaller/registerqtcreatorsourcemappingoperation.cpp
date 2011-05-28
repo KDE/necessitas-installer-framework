@@ -42,7 +42,7 @@ bool RegisterQtCreatorSourceMappingOperation::performOperation()
     const QString &newPath = args.at(2);
 
 #if defined(Q_OS_MAC)
-    QString iniFileLocation = QLatin1String("%1/NecessitasQtCreator.app/Contents/Resources/Nokia/QtCreator.ini");
+    QString iniFileLocation = QLatin1String("~/.config/eu.licentia.necessitas/NecessitasQtCreator.ini");
 #else
     QString iniFileLocation = QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini");
 #endif
