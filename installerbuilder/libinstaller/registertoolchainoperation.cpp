@@ -55,7 +55,7 @@ static const char *const DISPLAY_NAME_KEY = "ProjectExplorer.ToolChain.DisplayNa
 
 #if defined ( Q_OS_MAC )
     static const char *ToolChainSettingsSuffixPath =
-        "/NecessitasQtCreator.app/Contents/Resources/Nokia/toolChains.xml";
+        "~/.config/eu.licentia.necessitas/toolChains.xml";
 #else
     static const char *ToolChainSettingsSuffixPath =
         "/QtCreator/share/qtcreator/Nokia/toolChains.xml";
