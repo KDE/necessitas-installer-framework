@@ -64,7 +64,6 @@ bool RegisterQtInCreatorOperation::performOperation()
         return false;
     }
 
-    const QString &rootInstallPath = args.at(0); //for example "C:\\Nokia_SDK\\"
     const QString &versionName = args.at(1);
     const QString &path = args.at(2);
     QString mingwPath;
@@ -87,9 +86,10 @@ bool RegisterQtInCreatorOperation::performOperation()
         sbsPath = args.at(8);
 
 #if defined ( Q_OS_MAC )
-    QSettings settings( QString("~/.config/eu.licentia.necessitas/NecessitasQtCreator.ini")
+    QSettings settings( QString( QLatin1String("~/.config/eu.licentia.necessitas/NecessitasQtCreator.ini") ),
                          QSettings::IniFormat );
 #else
+    const QString &rootInstallPath = args.at(0); //for example "C:\\Nokia_SDK\\"
     QSettings settings( QString( QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini")
                                 ).arg(rootInstallPath),
                         QSettings::IniFormat );
