@@ -41,14 +41,6 @@
 
 using namespace QInstaller;
 
-#if defined ( Q_OS_MAC )
-    static const char *QtCreatorSettingsSuffixPath =
-        "~/.config/eu.licentia.necessitas/NecessitasQtCreator.ini";
-#else
-    static const char *QtCreatorSettingsSuffixPath =
-        "/QtCreator/share/qtcreator/Nokia/QtCreator.ini";
-#endif
-
 RegisterQtInCreatorV2Operation::RegisterQtInCreatorV2Operation()
 {
     setName(QLatin1String("RegisterQtInCreatorV2"));
@@ -94,11 +86,12 @@ bool RegisterQtInCreatorV2Operation::performOperation()
     const QString &sbsPath = args.value(argCounter++);
 
 #if defined ( Q_OS_MAC )
-    QSettings settings(QLatin1String(QtCreatorSettingsSuffixPath),
-                        QSettings::IniFormat);
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
+        QLatin1String("NecessitasQtCreator"));
 #else
-    QSettings settings(rootInstallPath + QLatin1String(QtCreatorSettingsSuffixPath),
-                        QSettings::IniFormat);
+    QString iniFileLocation = QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini");
+    QSettings settings( iniFileLocation.arg(rootInstallPath),
+                        QSettings::IniFormat );
 #endif
     QString newVersions;
     QStringList oldNewQtVersions = settings.value(QLatin1String("NewQtVersions")
@@ -159,10 +152,10 @@ bool RegisterQtInCreatorV2Operation::undoOperation()
 #endif
     }
 #if defined ( Q_OS_MAC )
-    QSettings settings(QLatin1String(QtCreatorSettingsSuffixPath),
-                        QSettings::IniFormat);
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
+        QLatin1String("NecessitasQtCreator"));
 #else
-    QSettings settings(rootInstallPath + QLatin1String(QtCreatorSettingsSuffixPath),
+    QSettings settings(rootInstallPath + QLatin1String("/QtCreator/share/qtcreator/Nokia/QtCreator.ini"),
                         QSettings::IniFormat);
 #endif
     QString newVersions;

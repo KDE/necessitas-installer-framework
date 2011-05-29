@@ -82,13 +82,13 @@ bool SetQtCreatorValueOperation::performOperation()
     const QString &value = args.at(3);
 
 #if defined(Q_OS_MAC)
-    QString iniFileLocation = QLatin1String("~/.config/eu.licentia.necessitas/NecessitasQtCreator.ini");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
+        QLatin1String("NecessitasQtCreator"));
 #else
     QString iniFileLocation = QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini");
-#endif
-
     QSettings settings( iniFileLocation.arg(rootInstallPath),
                         QSettings::IniFormat );
+#endif
 
     if(!group.isEmpty()) {
         settings.beginGroup(group);
