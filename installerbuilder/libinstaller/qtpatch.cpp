@@ -205,8 +205,6 @@ bool QtPatch::patchTextFile( const QString & fileName,
     QHashIterator<QByteArray, QByteArray> it(searchReplacePairs);
     while(it.hasNext()) {
         it.next();
-        qDebug() << "it.key(): " << it.key();
-        qDebug() << "it.value(): " << it.value();
         source.replace(it.key(), it.value());
     }
 
