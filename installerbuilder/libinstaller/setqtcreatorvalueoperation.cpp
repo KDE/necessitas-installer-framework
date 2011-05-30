@@ -75,20 +75,14 @@ bool SetQtCreatorValueOperation::performOperation()
         return false;
     }
 
-    const QString &rootInstallPath = args.at(0); //for example "C:\\Nokia_SDK\\"
+//  const QString &rootInstallPath = args.at(0); //for example "C:\\Nokia_SDK\\"
 
     const QString &group = groupName(args.at(1));
     const QString &key = args.at(2);
     const QString &value = args.at(3);
 
-#if defined(Q_OS_MAC)
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
-        QLatin1String("NecessitasQtCreator"));
-#else
-    QString iniFileLocation = QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini");
-    QSettings settings( iniFileLocation.arg(rootInstallPath),
-                        QSettings::IniFormat );
-#endif
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(NQTC_SETTINGS_ORG),
+        QLatin1String(NQTC_SETTINGS_APPNAME));
 
     if(!group.isEmpty()) {
         settings.beginGroup(group);

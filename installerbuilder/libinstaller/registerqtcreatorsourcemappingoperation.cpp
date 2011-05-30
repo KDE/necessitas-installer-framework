@@ -37,18 +37,12 @@ bool RegisterQtCreatorSourceMappingOperation::performOperation()
         return false;
     }
 
-    const QString &rootInstallPath = args.at(0); //for example "C:\\Nokia_SDK\\"
+//  const QString &rootInstallPath = args.at(0); //for example "C:\\Nokia_SDK\\"
     const QString &oldPath = args.at(1);
     const QString &newPath = args.at(2);
 
-#if defined(Q_OS_MAC)
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
-        QLatin1String("NecessitasQtCreator"));
-#else
-    QString iniFileLocation = QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini");
-    QSettings settings( iniFileLocation.arg(rootInstallPath),
-                        QSettings::IniFormat );
-#endif
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(NQTC_SETTINGS_ORG),
+        QLatin1String(NQTC_SETTINGS_APPNAME));
 
     QMap<QString, QString> sourcePathMap;
     if (const int count = settings.beginReadArray(sourcePathMappingArrayName))

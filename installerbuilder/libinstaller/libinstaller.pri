@@ -34,6 +34,8 @@ win32-g++:LIBS += C:/Windows/System32/msvcrt.dll
 macx:LIBS += -framework Security
 unix:!macx:LIBS += -lutil
 
+DEFINES += NQTC_SETTINGS_ORG=\\\"eu.licentia.necessitas\\\" NQTC_SETTINGS_APPNAME=\\\"NecessitasQtCreator\\\" NQTC_SETTINGS_DOMAIN=\\\"www.kde.org\\\"
+
 static {
     unix {
         exists($$OUT_PWD/../lib/libinstaller.a):POST_TARGETDEPS += $$OUT_PWD/../lib/libinstaller.a

@@ -51,15 +51,16 @@ static const char *const TOOLCHAIN_FILE_VERSION_KEY = "Version";
 
 static const char *const ID_KEY = "ProjectExplorer.ToolChain.Id";
 static const char *const DISPLAY_NAME_KEY = "ProjectExplorer.ToolChain.DisplayName";
+static const char *const TOOLCHAIN_FILENAME = "/toolChains.xml";
 //End - copied from Creator
 
-#if defined ( Q_OS_MAC )
-    static const char *ToolChainSettingsSuffixPath =
-        "~/.config/eu.licentia.necessitas/toolChains.xml";
-#else
-    static const char *ToolChainSettingsSuffixPath =
-        "/QtCreator/share/qtcreator/Nokia/toolChains.xml";
-#endif
+//#if defined ( Q_OS_MAC )
+//    static const char *ToolChainSettingsSuffixPath =
+//        "~/.config/" NQTC_SETTINGS_ORG "/toolChains.xml";
+//#else
+//    static const char *ToolChainSettingsSuffixPath =
+//        "/QtCreator/share/qtcreator/Nokia/toolChains.xml";
+//#endif
 
 RegisterToolChainOperation::RegisterToolChainOperation()
 {
@@ -85,8 +86,8 @@ bool RegisterToolChainOperation::performOperation()
         return false;
     }
 
-    const Installer* const installer = qVariantValue<Installer*>( value(QLatin1String("installer")));
-    const QString &rootInstallPath = installer->value(QLatin1String("TargetDir"));
+//    const Installer* const installer = qVariantValue<Installer*>( value(QLatin1String("installer")));
+//    const QString &rootInstallPath = installer->value(QLatin1String("TargetDir"));
 
     int argCounter = 0;
     const QString &toolChainKey = args.at(argCounter++); //Qt SDK:gccPath
@@ -106,7 +107,11 @@ bool RegisterToolChainOperation::performOperation()
 
     QString toolChainsXmlFilePath;
 
-    toolChainsXmlFilePath = rootInstallPath + QLatin1String(ToolChainSettingsSuffixPath);
+    QScopedPointer<QSettings> settings(new QSettings(QSettings::IniFormat, QSettings::UserScope,
+                       QLatin1String(NQTC_SETTINGS_ORG), QLatin1String(NQTC_SETTINGS_APPNAME)));
+    QFileInfo settingsLocation(settings->fileName());
+    toolChainsXmlFilePath = settingsLocation.absolutePath() + QLatin1String(TOOLCHAIN_FILENAME);
+//    toolChainsXmlFilePath = rootInstallPath + QLatin1String(ToolChainSettingsSuffixPath);
 
     QHash< QString, QVariantMap > toolChainHash;
 
@@ -183,8 +188,8 @@ bool RegisterToolChainOperation::undoOperation()
         return false;
     }
 
-    const Installer* const installer = qVariantValue< Installer* >( value( QLatin1String( "installer" ) ) );
-    const QString &rootInstallPath = installer->value(QLatin1String("TargetDir"));
+//    const Installer* const installer = qVariantValue< Installer* >( value( QLatin1String( "installer" ) ) );
+//    const QString &rootInstallPath = installer->value(QLatin1String("TargetDir"));
 
     int argCounter = 0;
     const QString &toolChainKey = args.at(argCounter++); //Qt SDK:gccPath
@@ -206,7 +211,11 @@ bool RegisterToolChainOperation::undoOperation()
             QString(QLatin1String("%1:%2.%3")).arg(toolChainType, compilerPath, abiString);
     QString toolChainsXmlFilePath;
 
-    toolChainsXmlFilePath = rootInstallPath + QLatin1String(ToolChainSettingsSuffixPath);
+    QScopedPointer<QSettings> settings(new QSettings(QSettings::IniFormat, QSettings::UserScope,
+                       QLatin1String(NQTC_SETTINGS_ORG), QLatin1String(NQTC_SETTINGS_APPNAME)));
+    QFileInfo settingsLocation(settings->fileName());
+    toolChainsXmlFilePath = settingsLocation.absolutePath() + QLatin1String(TOOLCHAIN_FILENAME);
+//  toolChainsXmlFilePath = rootInstallPath + QLatin1String(ToolChainSettingsSuffixPath);
 
     QHash< QString, QVariantMap > toolChainHash;
 

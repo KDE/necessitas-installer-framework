@@ -85,14 +85,9 @@ bool RegisterQtInCreatorV2Operation::performOperation()
     const QString &systemRoot = args.value(argCounter++); //Symbian SDK root for example
     const QString &sbsPath = args.value(argCounter++);
 
-#if defined ( Q_OS_MAC )
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
-        QLatin1String("NecessitasQtCreator"));
-#else
-    QString iniFileLocation = QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini");
-    QSettings settings( iniFileLocation.arg(rootInstallPath),
-                        QSettings::IniFormat );
-#endif
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(NQTC_SETTINGS_ORG),
+        QLatin1String(NQTC_SETTINGS_APPNAME));
+
     QString newVersions;
     QStringList oldNewQtVersions = settings.value(QLatin1String("NewQtVersions")
         ).toString().split(QLatin1String(";"));
@@ -151,13 +146,9 @@ bool RegisterQtInCreatorV2Operation::undoOperation()
         qmakePath.append(QLatin1String("/bin/qmake"));
 #endif
     }
-#if defined ( Q_OS_MAC )
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
-        QLatin1String("NecessitasQtCreator"));
-#else
-    QSettings settings(rootInstallPath + QLatin1String("/QtCreator/share/qtcreator/Nokia/QtCreator.ini"),
-                        QSettings::IniFormat);
-#endif
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(NQTC_SETTINGS_ORG),
+        QLatin1String(NQTC_SETTINGS_APPNAME));
+
     QString newVersions;
     QStringList oldNewQtVersions = settings.value(QLatin1String("NewQtVersions")
         ).toString().split(QLatin1String(";"));

@@ -64,6 +64,8 @@ DEFINES += KDUPDATERGUITEXTBROWSER \
     KDUPDATERVIEW=QTextBrowser
 QT += gui
 
+DEFINES += NQTC_SETTINGS_ORG=\\\"eu.licentia.necessitas\\\" NQTC_SETTINGS_APPNAME=\\\"NecessitasQtCreator\\\" NQTC_SETTINGS_DOMAIN=\\\"www.kde.org\\\"
+
 TRY_INCLUDEPATHS = /include /usr/include /usr/local/include $$QMAKE_INCDIR $$INCLUDEPATH
 win32:TRY_INCLUDEPATHS += $$PWD/../../3rdparty/openssl-0.9.8k/src/include
 linux-lsb-g++:TRY_INCLUDEPATHS = $$QMAKE_INCDIR $$INCLUDEPATH

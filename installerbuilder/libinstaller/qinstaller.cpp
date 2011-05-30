@@ -639,14 +639,9 @@ void Installer::Private::initialize()
     m_vars.insert(QLatin1String("TargetDir"), replaceVariables(m_settings.targetDir()));
     m_vars.insert(QLatin1String("RemoveTargetDir"), replaceVariables(m_settings.removeTargetDir()));
 
-#ifdef Q_OS_MAC
-    // TODOMA :: Do something similar for all the other platforms as we shouldn't be overwriting Nokia's QtCreator setings on any platform.
-    QSettings creatorSettings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
-        QLatin1String("NecessitasQtCreator"));
-#else
-    QSettings creatorSettings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("Nokia"),
-        QLatin1String("QtCreator"));
-#endif
+    QSettings creatorSettings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(NQTC_SETTINGS_ORG),
+        QLatin1String(NQTC_SETTINGS_APPNAME));
+
     QFileInfo info(creatorSettings.fileName());
     if (info.exists())
         m_vars.insert(QLatin1String("QtCreatorSettingsFile"), info.absoluteFilePath());

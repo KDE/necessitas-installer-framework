@@ -63,7 +63,7 @@ namespace {
             // If the system settings are writable, don't touch the user settings.
             // The reason is that a doc registered while running with sudo could otherwise create
             // a root-owned configuration file a user directory.
-            QScopedPointer<QSettings> settings(new QSettings(QSettings::IniFormat, QSettings::SystemScope, QLatin1String("Nokia"), QLatin1String("QtCreator")));
+            QScopedPointer<QSettings> settings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(NQTC_SETTINGS_ORG), QLatin1String(NQTC_SETTINGS_APPNAME)));
 
             // QSettings::isWritable isn't reliable enough in 4.7, determine writability experimentally
             settings->setValue(QLatin1String("iswritable"), QLatin1String("accomplished"));
@@ -74,12 +74,12 @@ namespace {
                     settings->remove(QLatin1String("iswritable"));
             } else {
                 // we have to use user settings
-                settings.reset(new QSettings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("Nokia"), QLatin1String("QtCreator")));
+                settings.reset(new QSettings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(NQTC_SETTINGS_ORG), QLatin1String(NQTC_SETTINGS_APPNAME)));
             }
 
         #else
             QScopedPointer<QSettings> settings(new QSettings(QSettings::IniFormat, QSettings::UserScope,
-                               QLatin1String("Nokia"), QLatin1String("QtCreator")));
+                               QLatin1String(NQTC_SETTINGS_ORG), QLatin1String(NQTC_SETTINGS_APPNAME)));
         #endif
             return settings->fileName();
     }

@@ -85,15 +85,8 @@ bool RegisterQtInCreatorOperation::performOperation()
     if (args.count() >= 9)
         sbsPath = args.at(8);
 
-#if defined ( Q_OS_MAC )
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String("eu.licentia.necessitas"),
-        QLatin1String("NecessitasQtCreator"));
-#else
-    const QString &rootInstallPath = args.at(0); //for example "C:\\Nokia_SDK\\"
-    QSettings settings( QString( QLatin1String("%1/QtCreator/share/qtcreator/Nokia/QtCreator.ini")
-                                ).arg(rootInstallPath),
-                        QSettings::IniFormat );
-#endif
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(NQTC_SETTINGS_ORG),
+        QLatin1String(NQTC_SETTINGS_APPNAME));
 
     QString newVersions;
     QStringList oldNewQtVersions = settings.value(QLatin1String("NewQtVersions")
