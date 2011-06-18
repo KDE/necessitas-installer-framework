@@ -203,7 +203,17 @@ static int assemble(Input input, const QString &configdir)
     // setting the windows icon must happen before we append our binary data - otherwise they get lost :-/
     if (QFile::exists(settings.icon())) {
         // no error handling as this is not fatal
-        setApplicationIcon(tempFile, settings.icon());
+#if defined(__MINGW32__)
+        // On Windows, with g++, setApplicationIcon (which calls Windows API UpdateResource)
+        // breaks debugging information (the new icons are of a different size and the COFF
+        // debugging offsets are not adjusted), causing gdb to crash.
+        // So, if this is a debug build (indicated by "installer-d.exe"), leave the file alone.
+        // It's probably not too difficult to fix this by patching the COFF offsets by hand though.
+        if (tempFile.indexOf("installer-d.exe")!=-1)
+            verbose() << tempFile << ":: Not calling setApplicationIcon as it breaks debugging info on MinGW." << std::endl;
+#endif
+        else
+            setApplicationIcon(tempFile, settings.icon());
     }
 #elif defined(Q_WS_MAC)
     if (isBundle) {
