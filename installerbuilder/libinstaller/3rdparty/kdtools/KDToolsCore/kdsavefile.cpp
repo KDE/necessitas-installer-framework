@@ -29,6 +29,9 @@
 
 #ifdef Q_OS_WIN
 # include <io.h>
+# ifdef __GNUC__
+#  include <share.h>
+# endif
 #endif
 #include <memory>
 #include <sys/stat.h>
@@ -86,7 +89,11 @@ static QString makeAbsolute( const QString& path ) {
 static int myOpen( const QString& path, int flags, int mode ) {
 #ifdef Q_OS_WIN
     int fd;
+# ifdef __GNUC__
+    fd = _wsopen(reinterpret_cast<const wchar_t*>( path.utf16() ), flags, _SH_DENYRW, mode );
+# else
     _wsopen_s( &fd, reinterpret_cast<const wchar_t*>( path.utf16() ), flags, _SH_DENYRW, mode );
+# endif
     return fd;
 #else
     return open( QFile::encodeName( path ).constData(), flags, mode );
@@ -183,7 +190,7 @@ public:
 
     bool recreateTemporaryFile( QIODevice::OpenMode mode ) {
         deleteTempFile();
-        bool ok;
+        bool ok = true;
         tmpFile = createFile( generateTempFileName( filename ), mode, permissions, &ok );
         QObject::connect( tmpFile, SIGNAL(aboutToClose()), q, SIGNAL(aboutToClose()) );
         QObject::connect( tmpFile, SIGNAL(bytesWritten(qint64)), q, SIGNAL(bytesWritten(qint64)) );
