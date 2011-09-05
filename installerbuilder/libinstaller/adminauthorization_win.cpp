@@ -39,6 +39,10 @@
 #include <QtCore/QStringList>
 #include <QtCore/QVector>
 
+#ifdef __GNUC__
+#define _WIN32_WINNT 0x0500
+#endif
+
 #include <windows.h>
 
 class AdminAuthorization::Private

@@ -31,6 +31,7 @@ QT += gui # gui needed for KDUpdater include (compareVersion), which indirectly 
 LIBS = -L$$OUT_PWD/../lib -L$$OUT_PWD/../../lib -linstaller $$LIBS
 
 win32:LIBS += -lole32 -lUser32 -loleaut32 -lshell32
+win32-g++:LIBS += C:/Windows/System32/msvcrt.dll
 macx:LIBS += -framework Security
 unix:!macx:LIBS += -lutil
 
