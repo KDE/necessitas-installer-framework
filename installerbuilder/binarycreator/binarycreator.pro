@@ -22,4 +22,5 @@ SOURCES = binarycreator.cpp \
 HEADERS = rcc/rcc.h
 
 win32:OBJECTS_DIR = .obj
-win32:LIBS += Shell32.lib
+win32:!win32-g++: LIBS += shell32.lib
+win32-g++: LIBS += -lshell32

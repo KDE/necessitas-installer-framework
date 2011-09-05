@@ -182,9 +182,8 @@ macx:SOURCES += adminauthorization_mac.cpp
 unix:!macx: SOURCES += adminauthorization_x11.cpp
 
 win32:OBJECTS_DIR = .obj
-win32:LIBS += ole32.lib \
-    oleaut32.lib \
-    user32.lib
+win32:!win32-g++: LIBS += ole32.lib oleaut32.lib user32.lib
+win32-g++: LIBS += ole32 oleaut32 user32
 
 # Needed by kdtools (in kdlog_win.cpp):
 win32:LIBS += advapi32.lib psapi.lib
@@ -192,7 +191,7 @@ macx:LIBS += -framework Carbon
 
 CONFIG( shared, static|shared ): {
   DEFINES += LIB_INSTALLER_SHARED
-  win32: LIBS += shell32.lib
+  win32:!win32-g++: LIBS += shell32.lib
 }
 
 macx: LIBS += -framework Security

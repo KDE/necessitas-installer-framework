@@ -228,5 +228,6 @@ SOURCES += CPP/7zip/Archive/7z/7zRegister.cpp \
  CPP/7zip/Compress/PpmdRegister.cpp \
  CPP/7zip/Crypto/7zAesRegister.cpp
  
- win32:LIBS += ole32.lib oleaut32.lib user32.lib
+win32:!win32-g++: LIBS += ole32.lib oleaut32.lib user32.lib
+win32-g++: LIBS += -lole32 -loleaut32 -luser32
 }
