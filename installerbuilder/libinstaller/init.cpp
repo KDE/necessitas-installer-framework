@@ -46,6 +46,7 @@
 //added for NDK
 #include "copydirectoryoperation.h"
 #include "qtpatchoperation.h"
+#include "qtpatchoperation2.h"
 #include "setdemospathonqtoperation.h"
 #include "setexamplespathonqtoperation.h"
 #include "setpluginpathonqtcoreoperation.h"
@@ -223,6 +224,7 @@ void QInstaller::init()
     factory.registerUpdateOperation<SetQtCreatorValueOperation>(QLatin1String("SetQtCreatorValue"));
     factory.registerUpdateOperation<AddQtCreatorArrayValueOperation>(QLatin1String("AddQtCreatorArrayValue"));
     factory.registerUpdateOperation<QtPatchOperation>(QLatin1String("QtPatch"));
+    KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::QtPatchOperation2 >( QLatin1String( "QtPatch2" ) );
     factory.registerUpdateOperation<ReplaceOperation>(QLatin1String("Replace"));
     factory.registerUpdateOperation<LineReplaceOperation>(QLatin1String( "LineReplace" ) );
     factory.registerUpdateOperation<UpdateCreatorSettingsFrom21To22Operation>(QLatin1String("UpdateCreatorSettingsFrom21To22"));
