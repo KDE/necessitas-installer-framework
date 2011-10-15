@@ -102,6 +102,7 @@ HEADERS += $$PWD/packagemanagercore.h \
     qprocesswrapper.h \
     qsettingswrapper.h \
     constants.h \
+    registerpersistentsettings.h \
     packagemanagerproxyfactory.h
 
 SOURCES += $$PWD/packagemanagercore.cpp \
@@ -170,6 +171,7 @@ SOURCES += $$PWD/packagemanagercore.cpp \
     templates.cpp \
     qsettingswrapper.cpp \
     settings.cpp \
+    registerpersistentsettings.cpp \
     packagemanagerproxyfactory.cpp
 
 macx {
