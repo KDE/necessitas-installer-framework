@@ -102,7 +102,8 @@ HEADERS += $$PWD/packagemanagercore.h \
     updatecreatorsettingsfrom21to22operation.h \
     qprocesswrapper.h \
     qsettingswrapper.h \
-    constants.h
+    constants.h \
+    registerpersistentsettings.h
 
 SOURCES += $$PWD/packagemanagercore.cpp \
     $$PWD/packagemanagercore_p.cpp \
@@ -169,7 +170,8 @@ SOURCES += $$PWD/packagemanagercore.cpp \
     qprocesswrapper.cpp \
     templates.cpp \
     qsettingswrapper.cpp \
-    settings.cpp
+    settings.cpp \
+    registerpersistentsettings.cpp
 
 macx {
     HEADERS +=  macrelocateqt.h \
@@ -202,3 +204,5 @@ TRANSLATIONS += translations/de_de.ts \
 
 RESOURCES += ../common/openssl.qrc \
     resources/patch_file_lists.qrc
+
+

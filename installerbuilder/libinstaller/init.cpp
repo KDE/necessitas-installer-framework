@@ -59,6 +59,7 @@
 #include "registerqtoperation.h"
 #include "registerqtv2operation.h"
 #include "registerqtv23operation.h"
+#include "registerpersistentsettings.h"
 #include "setqtcreatorvalueoperation.h"
 #include "addqtcreatorarrayvalueoperation.h"
 #include "simplemovefileoperation.h"
@@ -186,7 +187,8 @@ void QInstaller::init()
     KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::RegisterQtInCreatorV2Operation>( QLatin1String( "RegisterQtInCreatorV2") );
     KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::RegisterQtInCreatorV23Operation>( QLatin1String( "RegisterQtInCreatorV23") );
     KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::RegisterToolChainOperation>( QLatin1String( "RegisterToolChain") );
-    KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::RegisterDefaultDebuggerOperation>( QLatin1String( "RegisterDefaultDebugger") );
+    KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::RegisterToolChainOperation>( QLatin1String( "RegisterToolChain") );
+    KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::RegisterPersistentSettings>( QLatin1String( "RegisterPersistentSettings") );
     KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::SetDemosPathOnQtOperation>( QLatin1String( "SetDemosPathOnQt") );
     KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::SetExamplesPathOnQtOperation>( QLatin1String( "SetExamplesPathOnQt") );
     KDUpdater::UpdateOperationFactory::instance().registerUpdateOperation< QInstaller::SetPluginPathOnQtCoreOperation>( QLatin1String( "SetPluginPathOnQtCore") );

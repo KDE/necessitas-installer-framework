@@ -25,6 +25,15 @@
         "/QtCreator/share/qtcreator/Nokia/qtversion.xml";
 #endif
 
+#if defined ( Q_OS_MAC )
+    static const char *const GenericQtSettingsSuffixPath =
+        "/Qt Creator.app/Contents/Resources/Nokia/";
+#else
+    static const char *const GenericQtSettingsSuffixPath =
+        "/QtCreator/share/qtcreator/Nokia/";
+#endif
+static const char *const GenericQtSettingsModificationDateKey = "ModificationDate";
+
     //Begin - copied from Creator src\plugins\projectexplorer\toolchainmanager.cpp
 static const char *const TOOLCHAIN_DATA_KEY = "ToolChain.";
 static const char *const TOOLCHAIN_COUNT_KEY = "ToolChain.Count";
