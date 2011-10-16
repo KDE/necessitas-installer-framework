@@ -97,7 +97,6 @@ bool RegisterPersistentSettings::performOperation()
     if (reader.load(settingsFileName))
         map = reader.restoreValues();
     map[settingsKey]=settingsValue;
-    map[QString::fromLatin1(GenericQtSettingsChangeTimeStampKey)]=QDateTime::currentDateTime().toMSecsSinceEpoch()/1000;
     ProjectExplorer::PersistentSettingsWriter writer;
     foreach (QString key, map.keys())
         writer.saveValue(key,map[key]);

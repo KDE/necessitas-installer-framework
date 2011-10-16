@@ -32,7 +32,6 @@
     static const char *const GenericQtSettingsSuffixPath =
         "/QtCreator/share/qtcreator/Nokia/";
 #endif
-static const char *const GenericQtSettingsChangeTimeStampKey = "ChangeTimeStamp";
 
     //Begin - copied from Creator src\plugins\projectexplorer\toolchainmanager.cpp
 static const char *const TOOLCHAIN_DATA_KEY = "ToolChain.";
