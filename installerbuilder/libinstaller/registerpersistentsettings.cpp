@@ -100,7 +100,7 @@ bool RegisterPersistentSettings::performOperation()
     ProjectExplorer::PersistentSettingsWriter writer;
     foreach (QString key, map.keys())
         writer.saveValue(key,map[key]);
-
+    QDir().mkpath(QFileInfo(settingsFileName).absolutePath());
     writer.save(settingsFileName, QString::fromLatin1("QtCreatorSettings"));
     return true;
 }
