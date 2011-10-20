@@ -101,7 +101,12 @@ bool RegisterPersistentSettings::performOperation()
     foreach (QString key, map.keys())
         writer.saveValue(key,map[key]);
     QDir().mkpath(QFileInfo(settingsFileName).absolutePath());
-    writer.save(settingsFileName, QString::fromLatin1("QtCreatorSettings"));
+    if (!writer.save(settingsFileName, QString::fromLatin1("QtCreatorSettings")))
+    {
+        setError(UserDefinedError);
+        setErrorString(tr("Can't write settings file %1 to %2.").arg(rootInstallPath).arg(QFileInfo(settingsFileName).absolutePath()));
+        return false;
+    }
     return true;
 }
 

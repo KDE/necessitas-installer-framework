@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    QString repoUrl = "http://www.forum.nokia.com/nokiaqtsdkrepository/oppdatering/windows/online_ndk_repo";
+    QString repoUrl = "http://nds2.fds-forum.nokia.com/nokiaqtsdkrepository/fremtiden/linux/x64/online_qtsdk_repo";
 
     QStringList args = app.arguments();
     for( QStringList::const_iterator it = args.constBegin(); it != args.constEnd(); ++it )
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     DownloadManager downloadManager;
 
 // get Updates.xml to get to know what we can download
-    downloadManager.append(QUrl(repoUrl + "/Updates.xml"));
+    downloadManager.append(QUrl(repoUrl + "/Updates.xml?-1837442266"));
     QObject::connect( &downloadManager, SIGNAL( finished() ), &downloadEventLoop, SLOT( quit() ) );
     downloadEventLoop.exec();
 // END - get Updates.xml to get to know what we can download
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     QTextStream batchFileOut(&batchFile);
 
-    const QString updatesXmlPath = "Updates.xml";
+    const QString updatesXmlPath = "Updates.xml?-1837442266";
 
     Q_ASSERT( !updatesXmlPath.isEmpty() );
     Q_ASSERT( QFile::exists( updatesXmlPath ) );
