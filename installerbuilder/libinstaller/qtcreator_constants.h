@@ -11,26 +11,26 @@
 
 #if defined(Q_OS_MAC)
     static const char ToolChainSettingsSuffixPath[] =
-        "/Qt Creator.app/Contents/Resources/Nokia/toolChains.xml";
+        "/Qt Creator.app/Contents/Resources/Nokia/qtcreator/toolchains.xml";
 #else
     static const char ToolChainSettingsSuffixPath[] =
-        "/QtCreator/share/qtcreator/Nokia/toolChains.xml";
+        "/QtCreator/share/qtcreator/Nokia/qtcreator/toolchains.xml";
 #endif
 
 #if defined(Q_OS_MAC)
     static const char QtVersionSettingsSuffixPath[] =
-        "/Qt Creator.app/Contents/Resources/Nokia/qtversion.xml";
+        "/Qt Creator.app/Contents/Resources/Nokia/qtcreator/qtversion.xml";
 #else
     static const char QtVersionSettingsSuffixPath[] =
-        "/QtCreator/share/qtcreator/Nokia/qtversion.xml";
+        "/QtCreator/share/qtcreator/Nokia/qtcreator/qtversion.xml";
 #endif
 
 #if defined ( Q_OS_MAC )
     static const char *const GenericQtSettingsSuffixPath =
-        "/Qt Creator.app/Contents/Resources/Nokia/";
+        "/Qt Creator.app/Contents/Resources/Nokia/qtcreator/";
 #else
     static const char *const GenericQtSettingsSuffixPath =
-        "/QtCreator/share/qtcreator/Nokia/";
+        "/QtCreator/share/qtcreator/Nokia/qtcreator/";
 #endif
 
 // Begin - copied from Creator src\plugins\projectexplorer\toolchainmanager.cpp
