@@ -564,13 +564,13 @@ void PackageManagerCorePrivate::initialize()
     if (info.exists()) {
         m_vars.insert(QLatin1String("QtCreatorSettingsFile"), info.absoluteFilePath());
         QDir settingsDirectory = info.absoluteDir();
-        if (settingsDirectory.exists(QLatin1String("qtcreator/qtversion.xml"))) {
+        if (settingsDirectory.exists(QLatin1String("qtversion.xml"))) {
                 m_vars.insert(QLatin1String("QtCreatorSettingsQtVersionFile"),
-                              settingsDirectory.absoluteFilePath(QLatin1String("qtcreator/qtversion.xml")));
+                              settingsDirectory.absoluteFilePath(QLatin1String("qtversion.xml")));
         }
-        if (settingsDirectory.exists(QLatin1String("qtcreator/toolchains.xml"))) {
+        if (settingsDirectory.exists(QLatin1String("toolChains.xml"))) {
                 m_vars.insert(QLatin1String("QtCreatorSettingsToolchainsFile"),
-                              settingsDirectory.absoluteFilePath(QLatin1String("qtcreator/toolchains.xml")));
+                              settingsDirectory.absoluteFilePath(QLatin1String("toolChains.xml")));
         }
     }
 
