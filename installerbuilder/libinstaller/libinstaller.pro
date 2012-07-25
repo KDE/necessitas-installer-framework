@@ -1,13 +1,8 @@
 TEMPLATE = lib
 TARGET = installer
-DEPENDPATH += . \
-    .. \
-    ../common \
-    3rdparty/kdtools 
 
-INCLUDEPATH += . \
-    .. \
-    3rdparty/kdtools
+INCLUDEPATH += . ..
+DEPENDPATH += . .. 3rdparty/kdtools
 
 DESTDIR = $$OUT_PWD/../lib
 DLLDESTDIR = $$OUT_PWD/../bin
@@ -29,19 +24,19 @@ contains(CONFIG, static): {
     DEFINES += USE_STATIC_SQLITE_PLUGIN
 }
 
-include(3rdparty/p7zip_9.04/p7zip.pri)
+include(3rdparty/7zip/7zip.pri)
 include(3rdparty/kdtools/kdtools.pri)
 
-HEADERS += $$PWD/packagemanagercore.h \
-    $$PWD/packagemanagercore_p.h \
-    $$PWD/packagemanagergui.h \
-    ../common/binaryformat.h \
-    ../common/binaryformatengine.h \
-    ../common/binaryformatenginehandler.h \
-    ../common/repository.h \
-    ../common/zipjob.h \
-    ../common/utils.h \
-    ../common/errors.h \
+HEADERS += packagemanagercore.h \
+    packagemanagercore_p.h \
+    packagemanagergui.h \
+    binaryformat.h \
+    binaryformatengine.h \
+    binaryformatenginehandler.h \
+    repository.h \
+    zipjob.h \
+    utils.h \
+    errors.h \
     component.h \
     componentmodel.h \
     qinstallerglobal.h \
@@ -103,18 +98,19 @@ HEADERS += $$PWD/packagemanagercore.h \
     qsettingswrapper.h \
     constants.h \
     registerpersistentsettings.h \
-    packagemanagerproxyfactory.h
+    packagemanagerproxyfactory.h \
+    createlocalrepositoryoperation.h
 
-SOURCES += $$PWD/packagemanagercore.cpp \
-    $$PWD/packagemanagercore_p.cpp \
-    $$PWD/packagemanagergui.cpp \
-    ../common/binaryformat.cpp \
-    ../common/binaryformatengine.cpp \
-    ../common/binaryformatenginehandler.cpp \
-    ../common/repository.cpp \
-    ../common/zipjob.cpp \
-    ../common/fileutils.cpp \
-    ../common/utils.cpp \
+SOURCES += packagemanagercore.cpp \
+    packagemanagercore_p.cpp \
+    packagemanagergui.cpp \
+    binaryformat.cpp \
+    binaryformatengine.cpp \
+    binaryformatenginehandler.cpp \
+    repository.cpp \
+    zipjob.cpp \
+    fileutils.cpp \
+    utils.cpp \
     component.cpp \
     componentmodel.cpp \
     qtpatch.cpp \
@@ -172,7 +168,8 @@ SOURCES += $$PWD/packagemanagercore.cpp \
     qsettingswrapper.cpp \
     settings.cpp \
     registerpersistentsettings.cpp \
-    packagemanagerproxyfactory.cpp
+    packagemanagerproxyfactory.cpp \
+    createlocalrepositoryoperation.cpp
 
 macx {
     HEADERS +=  macrelocateqt.h \
@@ -185,9 +182,10 @@ win32:SOURCES += adminauthorization_win.cpp
 macx:SOURCES += adminauthorization_mac.cpp
 unix:!macx: SOURCES += adminauthorization_x11.cpp
 
-win32:OBJECTS_DIR = .obj
-win32:!win32-g++: LIBS += ole32.lib oleaut32.lib user32.lib
-win32-g++: LIBS += ole32 oleaut32 user32
+# Needed by createshortcutoperation
+#win32:!win32-g++: LIBS += ole32.lib oleaut32.lib user32.lib
+#win32-g++: LIBS += ole32 oleaut32 user32
+win32:LIBS += -loleaut32 -lUser32
 
 # Needed by kdtools (in kdlog_win.cpp):
 win32:LIBS += advapi32.lib psapi.lib
@@ -195,15 +193,10 @@ macx:LIBS += -framework Carbon
 
 CONFIG( shared, static|shared ): {
   DEFINES += LIB_INSTALLER_SHARED
-  win32:!win32-g++: LIBS += shell32.lib
+  win32: LIBS += -lshell32
+#  win32:!win32-g++: LIBS += shell32.lib
 }
 
 macx: LIBS += -framework Security
 
-TRANSLATIONS += translations/de_de.ts \
-    translations/sv_se.ts
-
-RESOURCES += ../common/openssl.qrc \
-    resources/patch_file_lists.qrc
-
-
+RESOURCES += resources/patch_file_lists.qrc

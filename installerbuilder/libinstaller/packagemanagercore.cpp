@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,21 +17,25 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "packagemanagercore.h"
 
 #include "adminauthorization.h"
-#include "common/binaryformat.h"
-#include "common/errors.h"
-#include "common/utils.h"
+#include "binaryformat.h"
 #include "component.h"
 #include "downloadarchivesjob.h"
+#include "errors.h"
 #include "fsengineclient.h"
 #include "getrepositoriesmetainfojob.h"
 #include "messageboxhandler.h"
@@ -48,6 +46,7 @@
 #include "qprocesswrapper.h"
 #include "qsettingswrapper.h"
 #include "settings.h"
+#include "utils.h"
 
 #include <QtCore/QTemporaryFile>
 
@@ -56,11 +55,11 @@
 #include <QtScript/QScriptEngine>
 #include <QtScript/QScriptContext>
 
-#include <kdsysinfo.h>
-#include <kdupdaterupdateoperationfactory.h>
+#include "kdsysinfo.h"
+#include "kdupdaterupdateoperationfactory.h"
 
 #ifdef Q_OS_WIN
-#include "qt_windows.h"
+#   include "qt_windows.h"
 #endif
 
 using namespace QInstaller;
@@ -364,8 +363,7 @@ int PackageManagerCore::downloadNeededArchives(double partProgressSize)
     ProgressCoordinator::instance()->emitLabelAndDetailTextChanged(tr("\nDownloading packages..."));
 
     // don't have it on the stack, since it keeps the temporary files
-    DownloadArchivesJob *const archivesJob =
-        new DownloadArchivesJob(d->m_settings.publicKey(), this);
+    DownloadArchivesJob *const archivesJob = new DownloadArchivesJob(this);
     archivesJob->setAutoDelete(false);
     archivesJob->setArchivesToDownload(archivesToDownload);
     connect(this, SIGNAL(installationInterrupted()), archivesJob, SLOT(cancel()));
@@ -1524,8 +1522,11 @@ bool PackageManagerCore::updateComponentData(struct Data &data, Component *compo
         // add downloadable archive from xml
         const QStringList downloadableArchives = data.package->data(scDownloadableArchives).toString()
             .split(QRegExp(QLatin1String("\\b(,|, )\\b")), QString::SkipEmptyParts);
-        foreach (const QString downloadableArchive, downloadableArchives)
-            component->addDownloadableArchive(downloadableArchive);
+
+        if (component->isFromOnlineRepository()) {
+            foreach (const QString downloadableArchive, downloadableArchives)
+                component->addDownloadableArchive(downloadableArchive);
+        }
 
         const QStringList componentsToReplace = data.package->data(scReplaces).toString()
             .split(QRegExp(QLatin1String("\\b(,|, )\\b")), QString::SkipEmptyParts);
@@ -1829,4 +1830,16 @@ QString PackageManagerCore::findDisplayVersion(const QString &componentName,
         return QString();
 
     return findDisplayVersion(replaceWith, components, versionKey, visited);
+}
+
+bool PackageManagerCore::createLocalRepositoryFromBinary() const
+{
+    return d->m_createLocalRepositoryFromBinary;
+}
+
+void PackageManagerCore::setCreateLocalRepositoryFromBinary(bool create)
+{
+    if (!isOfflineOnly())
+        return;
+    d->m_createLocalRepositoryFromBinary = create;
 }

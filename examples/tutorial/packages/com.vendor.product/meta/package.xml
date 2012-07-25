@@ -1,8 +1,16 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Package>
     <DisplayName>The root component</DisplayName>
     <Description>Install this example.</Description>
     <Version>0.1.0-1</Version>
     <ReleaseDate>2010-09-21</ReleaseDate>
     <Name>com.vendor.product</Name>
+    <Licenses>
+        <License name="Beer Public License Agreement" file="license.txt" />
+    </Licenses>
+    <Translations>
+        <Translation>de_de.qm</Translation>
+    </Translations>
+    <Default>script</Default>
+    <Script>installscript.qs</Script>
 </Package>

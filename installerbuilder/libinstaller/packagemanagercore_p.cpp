@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,20 +17,25 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "packagemanagercore_p.h"
 
 #include "adminauthorization.h"
-#include "common/binaryformat.h"
-#include "common/errors.h"
-#include "common/fileutils.h"
+#include "binaryformat.h"
 #include "component.h"
+#include "errors.h"
+#include "fileutils.h"
 #include "fsengineclient.h"
 #include "messageboxhandler.h"
 #include "packagemanagercore.h"
@@ -44,12 +43,12 @@
 #include "qprocesswrapper.h"
 #include "qsettingswrapper.h"
 
-#include <kdsavefile.h>
-#include <kdselfrestarter.h>
+#include "kdsavefile.h"
+#include "kdselfrestarter.h"
 #include "kdupdaterfiledownloaderfactory.h"
-#include <kdupdaterupdatesourcesinfo.h>
-#include <kdupdaterupdateoperationfactory.h>
-#include <kdupdaterupdatefinder.h>
+#include "kdupdaterupdatesourcesinfo.h"
+#include "kdupdaterupdateoperationfactory.h"
+#include "kdupdaterupdatefinder.h"
 
 #include <QtCore/QtConcurrentRun>
 #include <QtCore/QCoreApplication>
@@ -164,6 +163,7 @@ PackageManagerCorePrivate::PackageManagerCorePrivate(PackageManagerCore *core)
     , m_updateSourcesAdded(false)
     , m_componentsToInstallCalculated(false)
     , m_proxyFactory(0)
+    , m_createLocalRepositoryFromBinary(false)
 {
 }
 
@@ -186,6 +186,7 @@ PackageManagerCorePrivate::PackageManagerCorePrivate(PackageManagerCore *core, q
     , m_magicBinaryMarker(magicInstallerMaker)
     , m_componentsToInstallCalculated(false)
     , m_proxyFactory(0)
+    , m_createLocalRepositoryFromBinary(false)
 {
     connect(this, SIGNAL(installationStarted()), m_core, SIGNAL(installationStarted()));
     connect(this, SIGNAL(installationFinished()), m_core, SIGNAL(installationFinished()));
@@ -352,7 +353,7 @@ void PackageManagerCorePrivate::clearUpdaterComponentLists()
     const QList<QPair<Component*, Component*> > list = m_componentsToReplaceUpdaterMode.values();
     for (int i = 0; i < list.count(); ++i) {
         if (usedComponents.contains(list.at(i).second))
-            qWarning() << "a replaceme was allready in the list - is that correct?";
+            qWarning() << "a replacement was already in the list - is that correct?";
         else
             usedComponents.insert(list.at(i).second);
     }
@@ -505,6 +506,7 @@ void PackageManagerCorePrivate::initialize()
 {
     m_coreCheckedHash.clear();
     m_componentsToInstallCalculated = false;
+    m_createLocalRepositoryFromBinary = false;
 
     // first set some common variables that may used e.g. as placeholder
     // in some of the settings variables or in a script or...
@@ -537,7 +539,6 @@ void PackageManagerCorePrivate::initialize()
     m_vars.insert(QLatin1String("ProductName"), m_settings.applicationName());
     m_vars.insert(QLatin1String("ProductVersion"), m_settings.applicationVersion());
     m_vars.insert(scTitle, m_settings.title());
-    m_vars.insert(scMaintenanceTitle, m_settings.maintenanceTitle());
     m_vars.insert(scPublisher, m_settings.publisher());
     m_vars.insert(QLatin1String("Url"), m_settings.url());
     m_vars.insert(scStartMenuDir, m_settings.startMenuDir());
@@ -717,7 +718,7 @@ Operation *PackageManagerCorePrivate::createOwnedOperation(const QString &type)
 
 /*!
     \internal
-    Removes \a opertion from the operations owned by the installer, returns the very same operation if the
+    Removes \a operation from the operations owned by the installer, returns the very same operation if the
     operation was found, otherwise 0.
  */
 Operation *PackageManagerCorePrivate::takeOwnedOperation(Operation *operation)
@@ -1213,7 +1214,7 @@ void PackageManagerCorePrivate::writeUninstaller(OperationList performedOperatio
         //          |--- if we wrote a new maintenance tool, take this as output - if not, write out a new
         //                  one and set it as output file, remember we did this
         //          |--- append the binary data based on the loaded input file (see 2), make sure we force
-        //                 uncompression of the resource section if we read from a binary data file (see 4.1).
+        //                 uncompressing the resource section if we read from a binary data file (see 4.1).
         //
         // 4 - force a deferred rename on the .dat file (see 4.1)
         // 5 - force a deferred rename on the maintenance file (see 5.1)
@@ -1423,7 +1424,7 @@ void PackageManagerCorePrivate::runInstaller()
         info.setFileName(componentsXmlPath());
         // Clear the packages as we might install into an already existing installation folder.
         info.clearPackageInfoList();
-        // also update the applicatin name and version, might be set from a script as well
+        // also update the application name and version, might be set from a script as well
         info.setApplicationName(m_core->value(QLatin1String("ProductName"), m_settings.applicationName()));
         info.setApplicationVersion(m_core->value(QLatin1String("ProductVersion"),
             m_settings.applicationVersion()));
@@ -1431,11 +1432,49 @@ void PackageManagerCorePrivate::runInstaller()
         callBeginInstallation(componentsToInstall);
         stopProcessesForUpdates(componentsToInstall);
 
-        const int progressOperationCount = countProgressOperations(componentsToInstall);
+        const int progressOperationCount = countProgressOperations(componentsToInstall)
+            + (m_createLocalRepositoryFromBinary ? 1 : 0); // add one more operation as we support progress
         double progressOperationSize = componentsInstallPartProgressSize / progressOperationCount;
 
         foreach (Component *component, componentsToInstall)
             installComponent(component, progressOperationSize, adminRightsGained);
+
+        if (m_createLocalRepositoryFromBinary) {
+            emit m_core->titleMessageChanged(tr("Creating local repository"));
+            ProgressCoordinator::instance()->emitLabelAndDetailTextChanged(QString());
+            ProgressCoordinator::instance()->emitLabelAndDetailTextChanged(tr("Creating local repository"));
+
+            Operation *createRepo = createOwnedOperation(QLatin1String("CreateLocalRepository"));
+            if (createRepo) {
+                createRepo->setValue(QLatin1String("uninstall-only"), true);
+                createRepo->setValue(QLatin1String("installer"), QVariant::fromValue(m_core));
+                createRepo->setArguments(QStringList() << QCoreApplication::applicationFilePath() << target);
+
+                connectOperationToInstaller(createRepo, progressOperationSize);
+
+                bool success = performOperationThreaded(createRepo);
+                if (!success) {
+                    adminRightsGained = m_core->gainAdminRights();
+                    success = performOperationThreaded(createRepo);
+                }
+
+                if (success) {
+                    QSet<Repository> repos;
+                    foreach (Repository repo, m_settings.defaultRepositories()) {
+                        repo.setEnabled(false);
+                        repos.insert(repo);
+                    }
+                    repos.insert(Repository(QUrl::fromUserInput(createRepo
+                        ->value(QLatin1String("local-repo")).toString()), true));
+                    m_settings.setDefaultRepositories(repos);
+                    addPerformed(takeOwnedOperation(createRepo));
+                } else {
+                    MessageBoxHandler::critical(MessageBoxHandler::currentBestSuitParent(),
+                        QLatin1String("installationError"), tr("Error"), createRepo->errorString());
+                    createRepo->undoOperation();
+                }
+            }
+        }
 
         emit m_core->titleMessageChanged(tr("Creating Uninstaller"));
 
@@ -1821,7 +1860,7 @@ void PackageManagerCorePrivate::deleteUninstaller()
 #ifdef Q_OS_WIN
     // Since Windows does not support that the uninstaller deletes itself we  have to go with a rather dirty
     // hack. What we do is to create a batchfile that will try to remove the uninstaller once per second. Then
-    // we start that batchfile detached, finished our job and close ourself. Once that's done the batchfile
+    // we start that batchfile detached, finished our job and close ourselves. Once that's done the batchfile
     // will succeed in deleting our uninstall.exe and, if the installation directory was created but us and if
     // it's empty after the uninstall, deletes the installation-directory.
     const QString batchfile = QDir::toNativeSeparators(QFileInfo(QDir::tempPath(),
@@ -1861,7 +1900,7 @@ void PackageManagerCorePrivate::deleteUninstaller()
     if (!QProcessWrapper::startDetached(QLatin1String("cscript"), arguments, QDir::rootPath()))
         throw Error(tr("Cannot start uninstall"));
 #else
-    // every other platform has no problem if we just delete ourself now
+    // every other platform has no problem if we just delete ourselves now
     QFile uninstaller(QFileInfo(installerBinaryPath()).absoluteFilePath());
     uninstaller.remove();
 # ifdef Q_WS_MAC

@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,25 +17,29 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "getrepositorymetainfojob.h"
 
 #include "constants.h"
-#include "common/errors.h"
-#include "cryptosignatureverifier.h"
+#include "errors.h"
 #include "lib7z_facade.h"
 #include "messageboxhandler.h"
 #include "packagemanagercore_p.h"
 #include "qinstallerglobal.h"
 
-#include <kdupdaterfiledownloader.h>
-#include <kdupdaterfiledownloaderfactory.h>
+#include "kdupdaterfiledownloader.h"
+#include "kdupdaterfiledownloaderfactory.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QTimer>
@@ -91,12 +89,12 @@ public:
                 }
                 emit finished(true, QString());
             } catch (const Lib7z::SevenZipException& e) {
-                emit finished(false, tr("Error while extracting %1: %2.").arg(m_archive, e.message()));
+                emit finished(false, tr("Error while extracting %1. Error: %2").arg(m_archive, e.message()));
             } catch (...) {
                 emit finished(false, tr("Unknown exception caught while extracting %1.").arg(m_archive));
             }
         } else {
-            emit finished(false, tr("Could not open %1 for reading: %2.").arg(m_archive,
+            emit finished(false, tr("Could not open %1 for reading. Error: %2").arg(m_archive,
                 archive.errorString()));
         }
     }
@@ -118,7 +116,6 @@ GetRepositoryMetaInfoJob::GetRepositoryMetaInfoJob(PackageManagerCorePrivate *co
     m_canceled(false),
     m_silentRetries(3),
     m_retriesLeft(m_silentRetries),
-    m_publicKey(corePrivate->m_settings.publicKey()),
     m_downloader(0),
     m_waitForDone(false),
     m_corePrivate(corePrivate)
@@ -184,7 +181,7 @@ QString GetRepositoryMetaInfoJob::releaseTemporaryDirectory() const
     return m_temporaryDirectory;
 }
 
-// updates.xml download
+// Updates.xml download
 
 void GetRepositoryMetaInfoJob::startUpdatesXmlDownload()
 {
@@ -200,18 +197,18 @@ void GetRepositoryMetaInfoJob::startUpdatesXmlDownload()
     }
 
     if (!url.isValid()) {
-        finished(QInstaller::InvalidUrl, tr("Invalid repository URL: %1.").arg(url.toString()));
+        finished(QInstaller::InvalidUrl, tr("Invalid repository URL: %1").arg(url.toString()));
         return;
     }
 
-    m_downloader = FileDownloaderFactory::instance().create(url.scheme(), 0, QUrl(), this);
+    m_downloader = FileDownloaderFactory::instance().create(url.scheme(), this);
     if (!m_downloader) {
-        finished(QInstaller::InvalidUrl, tr("URL scheme not supported: %1 (%2).").arg(url.scheme(),
+        finished(QInstaller::InvalidUrl, tr("URL scheme not supported: %1 (%2)").arg(url.scheme(),
             url.toString()));
         return;
     }
 
-    //append a random string to avoid proxy caches
+    // append a random string to avoid proxy caches
     m_downloader->setUrl(QUrl(url.toString() + QString::fromLatin1("/Updates.xml?")
         .append(QString::number(qrand() * qrand()))));
 
@@ -251,13 +248,13 @@ void GetRepositoryMetaInfoJob::updatesXmlDownloadFinished()
 
     QFile updatesFile(fn);
     if (!updatesFile.rename(m_temporaryDirectory + QLatin1String("/Updates.xml"))) {
-        finished(QInstaller::DownloadError, tr("Could not move Updates.xml to target location: %1.")
+        finished(QInstaller::DownloadError, tr("Could not move Updates.xml to target location. Error: %1")
             .arg(updatesFile.errorString()));
         return;
     }
 
     if (!updatesFile.open(QIODevice::ReadOnly)) {
-        finished(QInstaller::DownloadError, tr("Could not open Updates.xml for reading: %1.")
+        finished(QInstaller::DownloadError, tr("Could not open Updates.xml for reading. Error: %1")
             .arg(updatesFile.errorString()));
         return;
     }
@@ -266,7 +263,7 @@ void GetRepositoryMetaInfoJob::updatesXmlDownloadFinished()
     QDomDocument doc;
     if (!doc.setContent(&updatesFile, &err)) {
         const QString msg =  tr("Could not fetch a valid version of Updates.xml from repository: %1. "
-            "Error: %2.").arg(m_repository.url().toString(), err);
+            "Error: %2").arg(m_repository.url().toString(), err);
 
         const QMessageBox::StandardButton b =
             MessageBoxHandler::critical(MessageBoxHandler::currentBestSuitParent(),
@@ -316,7 +313,7 @@ void GetRepositoryMetaInfoJob::updatesXmlDownloadFinished()
                     qDebug() << "Replace repository:" << oldRepository.url().toString() << "with:"
                         << newRepository.url().toString();
                 } else {
-                    qDebug() << "Invalid additional repositories action set in updates.xml fetched from:"
+                    qDebug() << "Invalid additional repositories action set in Updates.xml fetched from:"
                         << m_repository.url().toString() << "Line:" << el.lineNumber();
                 }
             }
@@ -340,13 +337,14 @@ void GetRepositoryMetaInfoJob::updatesXmlDownloadFinished()
             continue;
         if (el.tagName() == QLatin1String("PackageUpdate")) {
             const QDomNodeList c2 = el.childNodes();
-            for (int j = 0; j < c2.count(); ++j)
+            for (int j = 0; j < c2.count(); ++j) {
                 if (c2.at(j).toElement().tagName() == scName)
                     m_packageNames << c2.at(j).toElement().text();
                 else if (c2.at(j).toElement().tagName() == scRemoteVersion)
                     m_packageVersions << c2.at(j).toElement().text();
                 else if (c2.at(j).toElement().tagName() == QLatin1String("SHA1"))
                     m_packageHash << c2.at(j).toElement().text();
+            }
         }
     }
 
@@ -363,7 +361,7 @@ void GetRepositoryMetaInfoJob::updatesXmlDownloadFinished()
 void GetRepositoryMetaInfoJob::updatesXmlDownloadError(const QString &err)
 {
     if (m_retriesLeft <= 0) {
-        const QString msg = tr("Could not fetch Updates.xml from repository: %1. Error: %2.")
+        const QString msg = tr("Could not fetch Updates.xml from repository: %1. Error: %2")
             .arg(m_repository.url().toString(), err);
 
         QMessageBox::StandardButtons buttons = QMessageBox::Retry | QMessageBox::Cancel;
@@ -414,14 +412,7 @@ void GetRepositoryMetaInfoJob::fetchNextMetaInfo()
     const QString repoUrl = m_repository.url().toString();
     const QUrl url = QString::fromLatin1("%1/%2/%3meta.7z").arg(repoUrl, next,
         online ? nextVersion : QString());
-
-    if (!m_publicKey.isEmpty()) {
-        const CryptoSignatureVerifier verifier(m_publicKey);
-        const QUrl sigUrl = QString::fromLatin1("%1/%2/meta.7z.sig").arg(repoUrl, next);
-        m_downloader = FileDownloaderFactory::instance().create(url.scheme(), &verifier, sigUrl, this);
-    } else {
         m_downloader = FileDownloaderFactory::instance().create(url.scheme(), this);
-    }
 
     if (!m_downloader) {
         m_currentPackageName.clear();
@@ -461,25 +452,26 @@ void GetRepositoryMetaInfoJob::metaDownloadFinished()
 
     QFile arch(fn);
     if (!arch.open(QIODevice::ReadOnly)) {
-        finished(QInstaller::ExtractionError, tr("Could not open meta info archive: %1. Error: %2.").arg(fn,
+        finished(QInstaller::ExtractionError, tr("Could not open meta info archive: %1. Error: %2").arg(fn,
             arch.errorString()));
         return;
     }
 
     if (!m_packageHash.isEmpty()) {
-        //verify file hash
+        // verify file hash
         QByteArray expectedFileHash = m_packageHash.back().toLatin1();
         QByteArray archContent = arch.readAll();
         QByteArray realFileHash = QString::fromLatin1(QCryptographicHash::hash(archContent,
             QCryptographicHash::Sha1).toHex()).toLatin1();
         if (expectedFileHash != realFileHash) {
+            emit infoMessage(this, tr("The hash of one component does not match the expected one."));
             metaDownloadError(tr("Bad hash."));
             return;
         }
         m_packageHash.removeLast();
-        m_currentPackageName.clear();
     }
     arch.close();
+    m_currentPackageName.clear();
 
     ZipRunnable *runnable = new ZipRunnable(fn, m_temporaryDirectory, m_downloader);
     connect(runnable, SIGNAL(finished(bool,QString)), this, SLOT(unzipFinished(bool,QString)));
@@ -491,14 +483,8 @@ void GetRepositoryMetaInfoJob::metaDownloadFinished()
 
 void GetRepositoryMetaInfoJob::metaDownloadError(const QString &err)
 {
-    if (err == QObject::tr("Bad signature"))
-        emit infoMessage(this, tr("The RSA signature of one component could not be verified."));
-
-    if (err == QObject::tr("Bad hash"))
-        emit infoMessage(this, tr("The hash of one component does not match the expected one."));
-
     if (m_retriesLeft <= 0) {
-        const QString msg = tr("Could not download meta information for component: %1. Error: %2.")
+        const QString msg = tr("Could not download meta information for component: %1. Error: %2")
             .arg(m_currentPackageName, err);
 
         QMessageBox::StandardButtons buttons = QMessageBox::Retry | QMessageBox::Cancel;

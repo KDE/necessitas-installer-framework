@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,18 +17,23 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "settings.h"
 
-#include "common/errors.h"
-#include "common/repository.h"
+#include "errors.h"
 #include "qinstallerglobal.h"
+#include "repository.h"
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QStringList>
@@ -49,8 +48,6 @@ static const QLatin1String scPages("Pages");
 static const QLatin1String scPrefix("Prefix");
 static const QLatin1String scLogoSmall("LogoSmall");
 static const QLatin1String scWatermark("Watermark");
-static const QLatin1String scPublicKey("PublicKey");
-static const QLatin1String scPrivateKey("PrivateKey");
 static const QLatin1String scProductUrl("ProductUrl");
 static const QLatin1String scBackground("Background");
 static const QLatin1String scAdminTargetDir("AdminTargetDir");
@@ -72,21 +69,6 @@ static QSet<T> variantListToSet(const QVariantList &list)
     foreach (const QVariant &variant, list)
         set.insert(variant.value<T>());
     return set;
-}
-
-static QString splitTrimmed(const QString &string)
-{
-    if (string.isEmpty())
-        return QString();
-
-    const QStringList input = string.split(QRegExp(QLatin1String("\n|\r\n")));
-
-    QStringList result;
-    foreach (const QString &line, input)
-        result.append(line.trimmed());
-    result.append(QString());
-
-    return result.join(QLatin1String("\n"));
 }
 
 static QSet<Repository> readRepositories(QXmlStreamReader &reader, bool isDefault)
@@ -204,20 +186,17 @@ Settings Settings::fromFileAndPrefix(const QString &path, const QString &prefix)
     QXmlStreamReader reader(&file);
     if (reader.readNextStartElement()) {
         if (reader.name() != QLatin1String("Installer"))
-            throw Error(tr("%1 is not valid: Installer root node expected").arg(path));
+            throw Error(tr("%1 is not valid: Installer root node expected.").arg(path));
     }
 
     QStringList blackList;
-    blackList << scPrivateKey << scPublicKey << scRemoteRepositories << scSigningCertificate << scPages;
+    blackList << scRemoteRepositories << scSigningCertificate << scPages;
 
     Settings s;
     s.d->m_data.insert(scPrefix, prefix);
     while (reader.readNextStartElement()) {
         const QString name = reader.name().toString();
         if (blackList.contains(name)) {
-            if (name == scPrivateKey || name == scPublicKey)
-                s.d->m_data.insert(name, splitTrimmed(reader.readElementText()));
-
             if (name == scSigningCertificate)
                 s.d->m_data.insertMulti(name, s.d->makeAbsolutePath(reader.readElementText()));
 
@@ -253,11 +232,6 @@ Settings Settings::fromFileAndPrefix(const QString &path, const QString &prefix)
         s.d->m_data.insert(scUninstallerIniFile, s.uninstallerName() + QLatin1String(".ini"));
 
     return s;
-}
-
-QString Settings::maintenanceTitle() const
-{
-    return d->m_data.value(scMaintenanceTitle).toString();
 }
 
 QString Settings::logo() const
@@ -366,14 +340,9 @@ QStringList Settings::certificateFiles() const
     return d->m_data.value(scSigningCertificate).toStringList();
 }
 
-QByteArray Settings::privateKey() const
+bool Settings::allowNoneAsciiCharacters() const
 {
-    return d->m_data.value(scPrivateKey).toByteArray();
-}
-
-QByteArray Settings::publicKey() const
-{
-    return d->m_data.value(scPublicKey).toByteArray();
+    return d->m_data.value(scAllowNonAsciiCharacters).toBool();
 }
 
 bool Settings::hasReplacementRepos() const

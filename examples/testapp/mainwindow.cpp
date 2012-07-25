@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,11 +17,16 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "mainwindow.h"
@@ -36,8 +35,8 @@
 #include "updateagent.h"
 #include "updatesettingsdialog.h"
 
-#include <common/binaryformat.h>
-#include <common/errors.h>
+#include <binaryformat.h>
+#include <errors.h>
 #include <updatesettings.h>
 
 #include <kdselfrestarter.h>
@@ -124,7 +123,7 @@ void MainWindow::checkForUpdates()
         updatesInstalled();
     } catch (const QInstaller::Error &error) {
         QMessageBox::critical(this, tr("Check for Updates"), tr("Error while installing updates:\n%1")
-            .arg(error.what()));
+            .arg(error.message()));
         m_core.rollBackInstallation();
         settings.setLastResult(tr("Software Update failed."));
     } catch (...) {

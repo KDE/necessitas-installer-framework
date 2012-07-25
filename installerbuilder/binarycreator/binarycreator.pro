@@ -1,8 +1,8 @@
 TEMPLATE = app
 TARGET = binarycreator
 
-DEPENDPATH += . ..
-INCLUDEPATH += . .. rcc
+DEPENDPATH += . .. rcc ../common
+INCLUDEPATH += . .. rcc ../common
 
 DESTDIR = ../bin
 
@@ -15,12 +15,9 @@ RESOURCES += binarycreator.qrc
 
 # Input
 SOURCES = binarycreator.cpp \
-          rcc/rcc.cpp \
-          rcc/rccmain.cpp \
-          ../common/repositorygen.cpp 
-
-HEADERS = rcc/rcc.h
-
-win32:OBJECTS_DIR = .obj
+          rcc.cpp \
+          rccmain.cpp \
+          repositorygen.cpp
+HEADERS = rcc.h
 win32:!win32-g++: LIBS += shell32.lib
 win32-g++: LIBS += -lshell32

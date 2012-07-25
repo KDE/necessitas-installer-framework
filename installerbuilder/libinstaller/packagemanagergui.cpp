@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,30 +17,33 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
-
 #include "packagemanagergui.h"
 
 #include "component.h"
 #include "componentmodel.h"
+#include "errors.h"
+#include "fileutils.h"
 #include "messageboxhandler.h"
 #include "packagemanagercore.h"
 #include "qinstallerglobal.h"
 #include "progresscoordinator.h"
 #include "performinstallationform.h"
 #include "settings.h"
+#include "utils.h"
 
-#include "common/errors.h"
-#include "common/utils.h"
-#include "common/fileutils.h"
-
-#include <kdsysinfo.h>
+#include "kdsysinfo.h"
 
 #include <QtCore/QDir>
 #include <QtCore/QDynamicPropertyChangeEvent>
@@ -238,7 +235,7 @@ PackageManagerGui::PackageManagerGui(PackageManagerCore *core, QWidget *parent)
     if (m_core->isInstaller())
         setWindowTitle(tr("%1 Setup").arg(m_core->value(scTitle)));
     else
-        setWindowTitle(tr("%1").arg(m_core->value(scMaintenanceTitle)));
+        setWindowTitle(tr("Maintain %1").arg(m_core->value(scTitle)));
 
 #ifndef Q_WS_MAC
     setWindowIcon(QIcon(m_core->settings().icon()));
@@ -532,7 +529,8 @@ QWidget *PackageManagerGui::currentPageWidget() const
 
 void PackageManagerGui::cancelButtonClicked()
 {
-    if (currentId() != PackageManagerCore::InstallationFinished) {
+    if (currentId() != PackageManagerCore::Introduction
+        && currentId() != PackageManagerCore::InstallationFinished) {
         PackageManagerPage *const page = qobject_cast<PackageManagerPage*> (currentPage());
         if (page && page->isInterruptible() && m_core->status() != PackageManagerCore::Canceled
             && m_core->status() != PackageManagerCore::Failure) {
@@ -553,7 +551,7 @@ void PackageManagerGui::cancelButtonClicked()
             const QMessageBox::StandardButton bt =
                 MessageBoxHandler::question(MessageBoxHandler::currentBestSuitParent(),
                 QLatin1String("cancelInstallation"), tr("Question"),
-                tr("Do you want to abort the %1 application?").arg(app), QMessageBox::Yes | QMessageBox::No);
+                tr("Do you want to quit the %1 application?").arg(app), QMessageBox::Yes | QMessageBox::No);
             if (bt == QMessageBox::Yes)
                 QDialog::reject();
         }
@@ -673,12 +671,12 @@ QVariantHash PackageManagerPage::elementsForPage(const QString &pageName) const
 
 QString PackageManagerPage::titleForPage(const QString &pageName, const QString &value) const
 {
-    return tr("%1").arg(titleFromHash(m_core->settings().titlesForPage(pageName), value));
+    return titleFromHash(m_core->settings().titlesForPage(pageName), value);
 }
 
 QString PackageManagerPage::subTitleForPage(const QString &pageName, const QString &value) const
 {
-    return tr("%1").arg(titleFromHash(m_core->settings().subTitlesForPage(pageName), value));
+    return titleFromHash(m_core->settings().subTitlesForPage(pageName), value);
 }
 
 QString PackageManagerPage::titleFromHash(const QVariantHash &hash, const QString &value) const
@@ -792,8 +790,8 @@ IntroductionPage::IntroductionPage(PackageManagerCore *core)
     m_msgLabel->setWordWrap(true);
     m_msgLabel->setObjectName(QLatin1String("MessageLabel"));
     const QVariantHash hash = elementsForPage(QLatin1String("IntroductionPage"));
-    m_msgLabel->setText(tr("%1").arg(hash.value(QLatin1String("MessageLabel"), tr("Welcome to the %1 "
-        "Setup Wizard.")).toString().arg(productName())));
+    m_msgLabel->setText(hash.value(QLatin1String("MessageLabel"), tr("Welcome to the %1 "
+        "Setup Wizard.")).toString().arg(productName()));
 
     QVBoxLayout *layout = new QVBoxLayout(this);
     setLayout(layout);
@@ -889,10 +887,7 @@ LicenseAgreementPage::LicenseAgreementPage(PackageManagerCore *core)
     acceptLabel->setObjectName(QLatin1String("AcceptLicenseLabel"));
     acceptLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     const QVariantHash hash = elementsForPage(QLatin1String("LicenseAgreementPage"));
-    acceptLabel->setText(tr("%1").arg(hash.value(QLatin1String("AcceptLicenseLabel"), tr("I h<u>a</u>ve read "
-        "and agree to the following terms contained in the license agreements accompanying the Qt SDK and "
-        "additional items. I agree that my use of the Qt SDK is governed by the terms and conditions "
-        "contained in these license agreements.")).toString()));
+    acceptLabel->setText(hash.value(QLatin1String("AcceptLicenseLabel"), tr("I accept the licenses.")).toString());
 
     m_rejectRadioButton = new QRadioButton(this);
     ClickForwarder *rejectClickForwarder = new ClickForwarder(m_rejectRadioButton);
@@ -904,10 +899,7 @@ LicenseAgreementPage::LicenseAgreementPage(PackageManagerCore *core)
     rejectLabel->installEventFilter(rejectClickForwarder);
     rejectLabel->setObjectName(QLatin1String("RejectLicenseLabel"));
     rejectLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    rejectLabel->setText(tr("%1").arg(hash.value(QLatin1String("RejectLicenseLabel"), tr("I <u>d</u>o not "
-        "accept the terms and conditions of the above listed license agreements. Please note by checking the "
-        "box, you must cancel the installation or downloading the Qt SDK and must destroy all copies, or "
-        "portions thereof, of the Qt SDK in your possessions.")).toString()));
+    rejectLabel->setText(hash.value(QLatin1String("RejectLicenseLabel"), tr("I do not accept the licenses.")).toString());
 
 #if defined(Q_WS_X11) || defined(Q_WS_MAC)
     QFont labelFont(font());
@@ -999,11 +991,11 @@ public:
             connect(model, SIGNAL(defaultCheckStateChanged(bool)), m_core,
                 SLOT(componentsToInstallNeedsRecalculation()));
 
-            model->setHeaderData(ComponentModelHelper::NameColumn, Qt::Horizontal, tr("Component Name"));
+            model->setHeaderData(ComponentModelHelper::NameColumn, Qt::Horizontal, ComponentSelectionPage::tr("Component Name"));
             model->setHeaderData(ComponentModelHelper::InstalledVersionColumn, Qt::Horizontal,
-                tr("Installed Version"));
-            model->setHeaderData(ComponentModelHelper::NewVersionColumn, Qt::Horizontal, tr("New Version"));
-            model->setHeaderData(ComponentModelHelper::UncompressedSizeColumn, Qt::Horizontal, tr("Size"));
+                ComponentSelectionPage::tr("Installed Version"));
+            model->setHeaderData(ComponentModelHelper::NewVersionColumn, Qt::Horizontal, ComponentSelectionPage::tr("New Version"));
+            model->setHeaderData(ComponentModelHelper::UncompressedSizeColumn, Qt::Horizontal, ComponentSelectionPage::tr("Size"));
         }
 
         QHBoxLayout *hlayout = new QHBoxLayout;
@@ -1034,14 +1026,14 @@ public:
         const QVariantHash hash = q->elementsForPage(QLatin1String("ComponentSelectionPage"));
         if (m_core->isInstaller()) {
             m_checkDefault->setObjectName(QLatin1String("SelectDefaultComponentsButton"));
-            m_checkDefault->setShortcut(QKeySequence(tr("Alt+A", "select default components")));
-            m_checkDefault->setText(hash.value(QLatin1String("SelectDefaultComponentsButton"), tr("Def&ault"))
+            m_checkDefault->setShortcut(QKeySequence(ComponentSelectionPage::tr("Alt+A", "select default components")));
+            m_checkDefault->setText(hash.value(QLatin1String("SelectDefaultComponentsButton"), ComponentSelectionPage::tr("Def&ault"))
                 .toString());
         } else {
             m_checkDefault->setEnabled(false);
             m_checkDefault->setObjectName(QLatin1String("ResetComponentsButton"));
-            m_checkDefault->setShortcut(QKeySequence(tr("Alt+R", "reset to already installed components")));
-            m_checkDefault->setText(hash.value(QLatin1String("ResetComponentsButton"), tr("&Reset")).toString());
+            m_checkDefault->setShortcut(QKeySequence(ComponentSelectionPage::tr("Alt+R", "reset to already installed components")));
+            m_checkDefault->setText(hash.value(QLatin1String("ResetComponentsButton"), ComponentSelectionPage::tr("&Reset")).toString());
         }
         hlayout = new QHBoxLayout;
         hlayout->addWidget(m_checkDefault);
@@ -1050,15 +1042,15 @@ public:
         hlayout->addWidget(m_checkAll);
         connect(m_checkAll, SIGNAL(clicked()), this, SLOT(selectAll()));
         m_checkAll->setObjectName(QLatin1String("SelectAllComponentsButton"));
-        m_checkAll->setShortcut(QKeySequence(tr("Alt+S", "select all components")));
-        m_checkAll->setText(hash.value(QLatin1String("SelectAllComponentsButton"), tr("&Select All")).toString());
+        m_checkAll->setShortcut(QKeySequence(ComponentSelectionPage::tr("Alt+S", "select all components")));
+        m_checkAll->setText(hash.value(QLatin1String("SelectAllComponentsButton"), ComponentSelectionPage::tr("&Select All")).toString());
 
         m_uncheckAll = new QPushButton;
         hlayout->addWidget(m_uncheckAll);
         connect(m_uncheckAll, SIGNAL(clicked()), this, SLOT(deselectAll()));
         m_uncheckAll->setObjectName(QLatin1String("DeselectAllComponentsButton"));
-        m_uncheckAll->setShortcut(QKeySequence(tr("Alt+D", "deselect all components")));
-        m_uncheckAll->setText(hash.value(QLatin1String("DeselectAllComponentsButton"), tr("&Deselect All"))
+        m_uncheckAll->setShortcut(QKeySequence(ComponentSelectionPage::tr("Alt+D", "deselect all components")));
+        m_uncheckAll->setText(hash.value(QLatin1String("DeselectAllComponentsButton"), ComponentSelectionPage::tr("&Deselect All"))
             .toString());
 
         hlayout->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::MinimumExpanding,
@@ -1077,6 +1069,8 @@ public:
         if (m_treeView->selectionModel()) {
             disconnect(m_treeView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
                 this, SLOT(currentChanged(QModelIndex)));
+            disconnect(m_currentModel, SIGNAL(checkStateChanged(QModelIndex)), this,
+                SLOT(currentChanged(QModelIndex)));
         }
 
         m_currentModel = m_core->isUpdater() ? m_updaterModel : m_allModel;
@@ -1101,6 +1095,8 @@ public:
 
         connect(m_treeView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
             this, SLOT(currentChanged(QModelIndex)));
+        connect(m_currentModel, SIGNAL(checkStateChanged(QModelIndex)), this,
+            SLOT(currentChanged(QModelIndex)));
 
         m_treeView->setCurrentIndex(m_currentModel->index(0, 0));
     }
@@ -1108,18 +1104,22 @@ public:
 public slots:
     void currentChanged(const QModelIndex &current)
     {
-        m_sizeLabel->clear();
-        m_descriptionLabel->clear();
+        // if there is not selection or the current selected node didn't change, return
+        if (!current.isValid() || current != m_treeView->selectionModel()->currentIndex())
+            return;
 
-        if (current.isValid()) {
-            m_descriptionLabel->setText(m_currentModel->data(m_currentModel->index(current.row(),
-                ComponentModelHelper::NameColumn, current.parent()), Qt::ToolTipRole).toString());
-            if (!m_core->isUninstaller()) {
+        m_descriptionLabel->setText(m_currentModel->data(m_currentModel->index(current.row(),
+            ComponentModelHelper::NameColumn, current.parent()), Qt::ToolTipRole).toString());
+
+        m_sizeLabel->clear();
+        if (!m_core->isUninstaller()) {
+            Component *component = m_currentModel->componentFromIndex(current);
+            if (component && component->updateUncompressedSize() > 0) {
                 const QVariantHash hash = q->elementsForPage(QLatin1String("ComponentSelectionPage"));
-                m_sizeLabel->setText(tr("%1").arg(hash.value(QLatin1String("ComponentSizeLabel"), tr("This "
-                    "component will occupy approximately %1 on your hard disk drive.")).toString()
+                m_sizeLabel->setText(hash.value(QLatin1String("ComponentSizeLabel"),
+                    ComponentSelectionPage::tr("This component will occupy approximately %1 on your hard disk drive.")).toString()
                     .arg(m_currentModel->data(m_currentModel->index(current.row(),
-                    ComponentModelHelper::UncompressedSizeColumn, current.parent())).toString())));
+                    ComponentModelHelper::UncompressedSizeColumn, current.parent())).toString()));
             }
         }
     }
@@ -1204,7 +1204,7 @@ void ComponentSelectionPage::entering()
         QT_TR_NOOP("Please select the components you want to update."),
         QT_TR_NOOP("Please select the components you want to install."),
         QT_TR_NOOP("Please select the components you want to uninstall."),
-        QT_TR_NOOP("Select the components to install. Deselect installed components to unistall them.")
+        QT_TR_NOOP("Select the components to install. Deselect installed components to uninstall them.")
      };
 
     int index = 0;
@@ -1292,8 +1292,8 @@ TargetDirectoryPage::TargetDirectoryPage(PackageManagerCore *core)
     msgLabel->setWordWrap(true);
     msgLabel->setObjectName(QLatin1String("MessageLabel"));
     const QVariantHash hash = elementsForPage(QLatin1String("TargetDirectoryPage"));
-    msgLabel->setText(tr("%1").arg(hash.value(QLatin1String("MessageLabel"), tr("Please specify the folder "
-        "where %1 will be installed.")).toString().arg(productName())));
+    msgLabel->setText(hash.value(QLatin1String("MessageLabel"), tr("Please specify the folder "
+        "where %1 will be installed.")).toString().arg(productName()));
     layout->addWidget(msgLabel);
 
     QHBoxLayout *hlayout = new QHBoxLayout;
@@ -1307,8 +1307,8 @@ TargetDirectoryPage::TargetDirectoryPage(PackageManagerCore *core)
     browseButton->setObjectName(QLatin1String("BrowseDirectoryButton"));
     connect(browseButton, SIGNAL(clicked()), this, SLOT(dirRequested()));
     browseButton->setShortcut(QKeySequence(tr("Alt+R", "browse file system to choose a file")));
-    browseButton->setText(tr("%1").arg(hash.value(QLatin1String("BrowseDirectoryButton"), tr("B&rowse..."))
-        .toString()));
+    browseButton->setText(hash.value(QLatin1String("BrowseDirectoryButton"), tr("B&rowse..."))
+        .toString());
     hlayout->addWidget(browseButton);
 
     layout->addLayout(hlayout);
@@ -1345,9 +1345,9 @@ bool TargetDirectoryPage::validatePage()
     const QVariantHash hash = elementsForPage(QLatin1String("TargetDirectoryPage"));
     if (targetDir().isEmpty()) {
         MessageBoxHandler::critical(MessageBoxHandler::currentBestSuitParent(),
-            QLatin1String("EmptyTargetDirectoryMessage"), tr("Error"), tr("%1").arg(hash
+            QLatin1String("EmptyTargetDirectoryMessage"), tr("Error"), hash
             .value(QLatin1String("EmptyTargetDirectoryMessage"), tr("The install directory cannot be "
-            "empty, please specify a valid folder.")).toString()), QMessageBox::Ok);
+            "empty, please specify a valid folder.")).toString(), QMessageBox::Ok);
         return false;
     }
 
@@ -1360,9 +1360,9 @@ bool TargetDirectoryPage::validatePage()
         // it exists, but is not empty
         if (dir == QDir::root()) {
             MessageBoxHandler::critical(MessageBoxHandler::currentBestSuitParent(),
-                QLatin1String("ForbiddenTargetDirectoryMessage"), tr("Error"), tr("%1").arg(hash
+                QLatin1String("ForbiddenTargetDirectoryMessage"), tr("Error"), hash
                 .value(QLatin1String("ForbiddenTargetDirectoryMessage"), tr("As the install directory is "
-                "completely deleted, installing in %1 is forbidden.")).toString().arg(QDir::rootPath())),
+                "completely deleted, installing in %1 is forbidden.")).toString().arg(QDir::rootPath()),
                 QMessageBox::Ok);
             return false;
         }
@@ -1371,11 +1371,11 @@ bool TargetDirectoryPage::validatePage()
             return true;
 
         return MessageBoxHandler::critical(MessageBoxHandler::currentBestSuitParent(),
-            QLatin1String("OverwriteTargetDirectoryMessage"), tr("Warning"), tr("%1").arg(hash
+            QLatin1String("OverwriteTargetDirectoryMessage"), tr("Warning"), hash
             .value(QLatin1String("OverwriteTargetDirectoryMessage"), tr("You have selected an existing, "
             "non-empty folder for installation. Note that it will be completely wiped on uninstallation of "
             "this application. It is not advisable to install into this folder as installation might fail. "
-            "Do you want to continue?")).toString()), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes;
+            "Do you want to continue?")).toString(), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes;
     }
     return true;
 }
@@ -1396,8 +1396,8 @@ void TargetDirectoryPage::targetDirSelected()
 void TargetDirectoryPage::dirRequested()
 {
     const QVariantHash hash = elementsForPage(QLatin1String("TargetDirectoryPage"));
-    const QString newDirName = QFileDialog::getExistingDirectory(this, tr("%1").arg(hash
-        .value(QLatin1String("SelectInstallationFolderCaption"), tr("Select Installation Folder")).toString()),
+    const QString newDirName = QFileDialog::getExistingDirectory(this, hash
+        .value(QLatin1String("SelectInstallationFolderCaption"), tr("Select Installation Folder")).toString(),
         targetDir());
     if (newDirName.isEmpty() || newDirName == targetDir())
         return;
@@ -1545,8 +1545,7 @@ ReadyForInstallationPage::ReadyForInstallationPage(PackageManagerCore *core)
 */
 void ReadyForInstallationPage::entering()
 {
-    setCommitPage(true);
-    const QString target = packageManagerCore()->value(scTargetDir);
+    setCommitPage(false);
 
     if (packageManagerCore()->isUninstaller()) {
         m_taskDetailsButton->setVisible(false);
@@ -1556,7 +1555,9 @@ void ReadyForInstallationPage::entering()
         m_msgLabel->setText(tr("Setup is now ready to begin removing %1 from your computer.<br>"
             "<font color=\"red\">The program dir %2 will be deleted completely</font>, "
             "including all content in that directory!")
-            .arg(productName(), QDir::toNativeSeparators(QDir(target).absolutePath())));
+            .arg(productName(), QDir::toNativeSeparators(QDir(packageManagerCore()->value(scTargetDir))
+            .absolutePath())));
+        setCommitPage(true);
         return;
     } else if (packageManagerCore()->isPackageManager() || packageManagerCore()->isUpdater()) {
         setButtonText(QWizard::CommitButton, tr("U&pdate"));
@@ -1572,65 +1573,85 @@ void ReadyForInstallationPage::entering()
 
     refreshTaskDetailsBrowser();
 
-    const VolumeInfo vol = VolumeInfo::fromPath(target);
     const VolumeInfo tempVolume = VolumeInfo::fromPath(QDir::tempPath());
-    const bool tempOnSameVolume = (vol == tempVolume);
+    const VolumeInfo targetVolume = VolumeInfo::fromPath(packageManagerCore()->value(scTargetDir));
 
-    // there is no better way atm to check this
-    if (vol.size() == 0 && vol.availableSpace() == 0) {
-        qDebug() << QString::fromLatin1("Could not determine available space on device %1. Continue silently."
-            ).arg(target);
+    const quint64 tempVolumeAvailableSize = tempVolume.availableSize();
+    const quint64 installVolumeAvailableSize = targetVolume.availableSize();
+
+    // at the moment there is no better way to check this
+    if (targetVolume.size() == 0 && installVolumeAvailableSize == 0) {
+        qDebug() << QString::fromLatin1("Could not determine available space on device. Volume descriptor: %1,"
+            "Mount path: %2. Continue silently.").arg(targetVolume.volumeDescriptor(), targetVolume.mountPath());
+        setCommitPage(true);
+        return;     // TODO: Shouldn't this also disable the "Next" button?
+    }
+
+    const bool tempOnSameVolume = (targetVolume == tempVolume);
+    if (tempOnSameVolume) {
+        qDebug() << "Tmp and install folder are on the same volume. Volume mount point:" << targetVolume
+            .mountPath() << "Free space available:" << humanReadableSize(installVolumeAvailableSize);
+    } else {
+        qDebug() << "Tmp is on a different volume than the install folder. Tmp volume mount point:"
+            << tempVolume.mountPath() << "Free space available:" << humanReadableSize(tempVolumeAvailableSize)
+            << "Install volume mount point:" << targetVolume.mountPath() << "Free space "
+            "available:" << humanReadableSize(installVolumeAvailableSize);
+    }
+
+    const quint64 extraSpace = 256 * 1024 * 1024LL;
+    quint64 required(packageManagerCore()->requiredDiskSpace());
+    quint64 tempRequired(packageManagerCore()->requiredTemporaryDiskSpace());
+    if (required < extraSpace) {
+        required += 0.1 * required;
+        tempRequired += 0.1 * tempRequired;
+    } else {
+        required += extraSpace;
+        tempRequired += extraSpace;
+    }
+
+    quint64 repositorySize = 0;
+    const bool createLocalRepository = packageManagerCore()->createLocalRepositoryFromBinary();
+    if (createLocalRepository) {
+        repositorySize = QFile(QCoreApplication::applicationFilePath()).size();
+        required += repositorySize; // if we create a local repository, take that space into account as well
+    }
+
+    qDebug() << "Installation space required:" << humanReadableSize(required) << "Temporary space required:"
+        << humanReadableSize(tempRequired) << "Local repository size:" << humanReadableSize(repositorySize);
+
+    if (tempOnSameVolume && (installVolumeAvailableSize <= (required + tempRequired))) {
+        m_msgLabel->setText(tr("Not enough disk space to store temporary files and the installation! "
+            "Available space: %1, at least required %2.").arg(humanReadableSize(installVolumeAvailableSize),
+            humanReadableSize(required + tempRequired)));
         return;
     }
 
-    const quint64 required(packageManagerCore()->requiredDiskSpace());
-    const quint64 tempRequired(packageManagerCore()->requiredTemporaryDiskSpace());
-
-    const quint64 available = vol.availableSpace();
-    const quint64 tempAvailable = tempVolume.availableSpace();
-    const quint64 realRequiredTempSpace = quint64(0.1 * tempRequired + tempRequired);
-    const quint64 realRequiredSpace = quint64(2 * required);
-
-    const bool tempInstFailure = tempOnSameVolume && (available < realRequiredSpace
-        + realRequiredTempSpace);
-
-    qDebug() << QString::fromLatin1("Disk space check on %1: required: %2, available: %3, size: %4").arg(
-        target, QString::number(required), QString::number(available), QString::number(vol.size()));
-
-    QString tempString;
-    if (tempAvailable < realRequiredTempSpace || tempInstFailure) {
-        if (tempOnSameVolume) {
-            tempString = tr("Not enough disk space to store temporary files and the installation, "
-                "at least %1 are required").arg(humanReadableSize(realRequiredTempSpace + realRequiredSpace));
-        } else {
-            tempString = tr("Not enough disk space to store temporary files, at least %1 are required.")
-                .arg(humanReadableSize(realRequiredTempSpace));
-            setCommitPage(false);
-            m_msgLabel->setText(tempString);
-        }
+    if (installVolumeAvailableSize < required) {
+        m_msgLabel->setText(tr("Not enough disk space to store all selected components! Available space: %1, "
+            "at least required: %2.").arg(humanReadableSize(installVolumeAvailableSize),
+            humanReadableSize(required)));
+        return;
     }
 
-    // error on not enough space
-    if (available < required || tempInstFailure) {
-        if (tempOnSameVolume) {
-            m_msgLabel->setText(tempString);
-        } else {
-            m_msgLabel->setText(tr("The volume you selected for installation has insufficient space "
-                "for the selected components. The installation requires approximately %1.")
-                .arg(humanReadableSize(required)) + tempString);
-        }
-        setCommitPage(false);
-    } else if (available - required < 0.01 * vol.size()) {
+    if (tempVolumeAvailableSize < tempRequired) {
+        m_msgLabel->setText(tr("Not enough disk space to store temporary files! Available space: %1, at "
+            "least required: %2.").arg(humanReadableSize(tempVolumeAvailableSize),
+            humanReadableSize(tempRequired)));
+        return;
+    }
+
+    if (installVolumeAvailableSize - required < 0.01 * targetVolume.size()) {
         // warn for less than 1% of the volume's space being free
         m_msgLabel->setText(tr("The volume you selected for installation seems to have sufficient space for "
             "installation, but there will be less than 1% of the volume's space available afterwards. %1")
             .arg(m_msgLabel->text()));
-    } else if (available - required < 100 * 1024 * 1024LL) {
+    } else if (installVolumeAvailableSize - required < 100 * 1024 * 1024LL) {
         // warn for less than 100MB being free
         m_msgLabel->setText(tr("The volume you selected for installation seems to have sufficient space for "
             "installation, but there will be less than 100 MB available afterwards. %1")
             .arg(m_msgLabel->text()));
     }
+    setCommitPage(true);
 }
 
 void ReadyForInstallationPage::refreshTaskDetailsBrowser()
@@ -1781,7 +1802,7 @@ void PerformInstallationPage::leaving()
 
 void PerformInstallationPage::setTitleMessage(const QString &title)
 {
-    setTitle(tr("%1").arg(title));
+    setTitle(title);
 }
 
 // -- private slots
@@ -1826,11 +1847,11 @@ FinishedPage::FinishedPage(PackageManagerCore *core)
 
     const QVariantHash hash = elementsForPage(QLatin1String("FinishedPage"));
 #ifdef Q_WS_MAC
-    m_msgLabel->setText(tr("%1").arg(hash.value(QLatin1String("MessageLabel"), tr("Click Done to exit the %1 "
-        "Wizard.")).toString().arg(productName())));
+    m_msgLabel->setText(hash.value(QLatin1String("MessageLabel"), tr("Click Done to exit the %1 "
+        "Wizard.")).toString().arg(productName()));
 #else
-    m_msgLabel->setText(tr("%1").arg(hash.value(QLatin1String("MessageLabel"), tr("Click Finish to exit the "
-        "%1 Wizard.")).toString().arg(productName())));
+    m_msgLabel->setText(hash.value(QLatin1String("MessageLabel"), tr("Click Finish to exit the "
+        "%1 Wizard.")).toString().arg(productName()));
 #endif
 
     m_runItCheckBox = new QCheckBox(this);
@@ -1881,7 +1902,7 @@ void FinishedPage::entering()
     if (packageManagerCore()->status() == PackageManagerCore::Success) {
         const QString finishedText = packageManagerCore()->value(QLatin1String("FinishedText"));
         if (!finishedText.isEmpty())
-            m_msgLabel->setText(tr("%1").arg(finishedText));
+            m_msgLabel->setText(finishedText);
 
         if (!packageManagerCore()->value(scRunProgram).isEmpty()) {
             m_runItCheckBox->show();

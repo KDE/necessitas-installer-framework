@@ -2,9 +2,9 @@
 **
 ** This file is part of Installer Framework
 **
-** Copyright (c) 2010, 2011 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (c) 2010-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact: Nokia Corporation (info@qt.nokia.com)
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
 **
 ** GNU Lesser General Public License Usage
@@ -26,7 +26,7 @@
 ** conditions contained in a signed written agreement between you and Nokia.
 **
 ** If you have questions regarding the use of this file, please contact
-** Nokia at info@qt.nokia.com.
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "installerbasecommons.h"
@@ -141,7 +141,7 @@ bool IntroductionPageImpl::validatePage()
 
         if (m_updatesFetched) {
             if (core->updaterComponents().count() <= 0)
-                setErrorMessage(tr("<b>No updates available.</b>"));
+                setErrorMessage(QLatin1String("<b>") + tr("No updates available.") + QLatin1String("</b>"));
             else
                 setComplete(true);
         }
@@ -295,6 +295,7 @@ void IntroductionPageImpl::entering()
     showWidgets(false);
     setMessage(QString());
     setErrorMessage(QString());
+    setButtonText(QWizard::CancelButton, tr("Quit"));
 
     PackageManagerCore *core = packageManagerCore();
     if (core->isUninstaller() ||core->isUpdater() || core->isPackageManager()) {
@@ -307,6 +308,7 @@ void IntroductionPageImpl::leaving()
 {
     // TODO: force repaint on next page, keeps unpainted after fetch
     QTimer::singleShot(100, gui()->page(nextId()), SLOT(repaint()));
+    setButtonText(QWizard::CancelButton, gui()->defaultButtonText(QWizard::CancelButton));
 }
 
 void IntroductionPageImpl::showWidgets(bool show)
@@ -396,12 +398,23 @@ bool TargetDirectoryPageImpl::validatePage()
     if (!QVariant(remove).toBool())
         return true;
 
-    const QDir dir(targetDir());
+    const QString targetDir = this->targetDir();
+    if (!packageManagerCore()->settings().allowNoneAsciiCharacters()) {
+        for (int i = 0; i < targetDir.length(); ++i) {
+            if (targetDir.at(i).unicode() & 0xff80) {
+                return failWithError(QLatin1String("NonAsciiTarget"), tr("The path or installation directory "
+                    "contains non ASCII characters. This is currently not supported! Please choose a different "
+                    "path or installation directory."));
+            }
+        }
+    }
+
+    const QDir dir(targetDir);
     // the directory exists and is empty...
     if (dir.exists() && dir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot).isEmpty())
         return true;
 
-    const QFileInfo fi(targetDir());
+    const QFileInfo fi(targetDir);
     if (fi.isDir()) {
         if (dir == QDir::root() || dir == QDir::home()) {
             return failWithError(QLatin1String("ForbiddenTargetDirectory"), tr("As the install directory "
@@ -416,7 +429,7 @@ bool TargetDirectoryPageImpl::validatePage()
         fileName += QLatin1String(".exe");
 #endif
 
-        QFileInfo fi2(targetDir() + QDir::separator() + fileName);
+        QFileInfo fi2(targetDir + QDir::separator() + fileName);
         if (fi2.exists()) {
             return askQuestion(QLatin1String("OverwriteTargetDirectory"),
                 TargetDirectoryPageImpl::tr("The folder you selected exists already and contains an "

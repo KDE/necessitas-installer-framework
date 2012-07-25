@@ -2,9 +2,9 @@
 **
 ** This file is part of Installer Framework
 **
-** Copyright (c) 2010, 2011 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (c) 2010-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact: Nokia Corporation (info@qt.nokia.com)
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
 **
 ** GNU Lesser General Public License Usage
@@ -26,7 +26,7 @@
 ** conditions contained in a signed written agreement between you and Nokia.
 **
 ** If you have questions regarding the use of this file, please contact
-** Nokia at info@qt.nokia.com.
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "installerbase_p.h"
@@ -34,10 +34,9 @@
 #include "installerbasecommons.h"
 #include "tabcontroller.h"
 
-#include <common/binaryformat.h>
-#include <common/errors.h>
-#include <common/fileutils.h>
-#include <common/utils.h>
+#include <binaryformat.h>
+#include <errors.h>
+#include <fileutils.h>
 #include <fsengineserver.h>
 #include <init.h>
 #include <lib7z_facade.h>
@@ -46,11 +45,12 @@
 #include <packagemanagergui.h>
 #include <qinstallerglobal.h>
 #include <settings.h>
+#include <utils.h>
 #include <updater.h>
 
 #include <kdselfrestarter.h>
 #include <kdrunoncechecker.h>
-#include "kdupdaterfiledownloaderfactory.h"
+#include <kdupdaterfiledownloaderfactory.h>
 
 #include <QtCore/QTranslator>
 #include <QtGui/QMessageBox>
@@ -64,7 +64,8 @@
 
 #define QUOTE_(x) #x
 #define QUOTE(x) QUOTE_(x)
-#define VERSION "Installerbase SHA1: \"" QUOTE(_GIT_SHA1_) "\" , Build date: " QUOTE(__DATE__) "."
+#define VERSION "IFW Version: \"" IFW_VERSION_STRING "\", Installer base SHA1: \"" QUOTE(_GIT_SHA1_) \
+    "\", Build date: " QUOTE(__DATE__) "."
 
 using namespace QInstaller;
 using namespace QInstallerCreator;
@@ -173,7 +174,7 @@ int main(int argc, char *argv[])
                 return 0;
 
             Updater u;
-            u.setVerbose(args.contains(QLatin1String("--verbose")));
+            u.setVerbose(args.contains(QLatin1String("--verbose")) || args.contains(QLatin1String("-v")));
             return u.checkForUpdates() ? 0 : 1;
         }
 
@@ -181,7 +182,8 @@ int main(int argc, char *argv[])
             || args.contains(QLatin1String("--undooperation"))) {
             MyCoreApplication app(argc, argv);
             OperationRunner o;
-            o.setVerbose(args.contains(QLatin1String("--verbose")));
+            o.setVerbose(args.contains(QLatin1String("--verbose"))
+                         || args.contains(QLatin1String("-v")));
             return o.runOperation(args);
         }
 
@@ -205,7 +207,7 @@ int main(int argc, char *argv[])
                 Sleep::sleep(1);
         }
 
-        if (args.contains(QLatin1String("--verbose")) || args.contains(QLatin1String("Verbose"))) {
+        if (args.contains(QLatin1String("--verbose")) || args.contains(QLatin1String("-v"))) {
             app.setVerbose();
             QInstaller::setVerbose(true);
         }
@@ -216,6 +218,14 @@ int main(int argc, char *argv[])
         {
             QTranslator* const translator = new QTranslator(&app);
             translator->load(localeFile);
+            app.installTranslator(translator);
+        }
+
+        // install English translation as fallback so that correct license button text is used
+        const QString enLocaleFile = QString::fromLatin1(":/translations/en_us.qm");
+        if (QFile::exists(enLocaleFile)) {
+            QTranslator* const translator = new QTranslator(&app);
+            translator->load(enLocaleFile);
             app.installTranslator(translator);
         }
 
@@ -231,6 +241,7 @@ int main(int argc, char *argv[])
         if (QInstaller::isVerbose()) {
             qDebug() << VERSION;
             qDebug() << "Arguments:" << args;
+            qDebug() << "Language: " << QLocale().name().toLower();
             qDebug() << "Resource tree before loading the in-binary resource:";
 
             QDir dir(QLatin1String(":/"));
@@ -244,16 +255,16 @@ int main(int argc, char *argv[])
         // the uninstaller for the recorded list of during the installation performed operations
         QInstaller::init();
 
-        // load the embedded binary resource
-        BinaryContent content = BinaryContent::readFromApplicationFile();
-        content.registerEmbeddedQResources();
+        // load and map the embedded binary resource, registers operations
+        BinaryContent content = BinaryContent::readAndRegisterFromApplicationFile();
 
         // instantiate the installer we are actually going to use
-        QInstaller::PackageManagerCore core(content.magicmaker(), content.performedOperations());
-        Settings m_settings = Settings(Settings::fromFileAndPrefix(QLatin1String(":/metadata/installer-config/config.xml"),
+        QInstaller::PackageManagerCore core(content.magicMarker(), content.performedOperations());
+        Settings m_settings =
+            Settings(Settings::fromFileAndPrefix(QLatin1String(":/metadata/installer-config/config.xml"),
             QLatin1String(":/metadata/installer-config/")));
 
-        // check execution rights for the maintanance tool
+        // check execution rights for the maintenance tool
         if (!core.isInstaller() && !allowMaintenanceTool() && !args.contains(QLatin1String("--script"))) {
             QString reason = m_settings.value(QLatin1String("DisallowExecuteReason"),
                                 QString::fromLatin1("You are not allowed to run %1.").arg(qAppName())).toString();
@@ -294,7 +305,7 @@ int main(int argc, char *argv[])
                 } else {
                     return PackageManagerCore::Failure;
                 }
-             } else if (argument == QLatin1String("--verbose") || argument == QLatin1String("Verbose")) {
+             } else if (argument == QLatin1String("--verbose") || argument == QLatin1String("-v")) {
                 core.setVerbose(true);
              } else if (argument == QLatin1String("--proxy")) {
                     core.settings().setProxyType(QInstaller::Settings::SystemProxy);

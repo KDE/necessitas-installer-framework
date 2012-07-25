@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,49 +17,38 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
-#include <common/repositorygen.h>
-#include <common/errors.h>
-#include <common/binaryformat.h>
-#include <common/fileutils.h>
-#include <common/utils.h>
-#include <common/consolepasswordprovider.h>
+#include "common/repositorygen.h"
+
+#include <binaryformat.h>
+#include <errors.h>
+#include <fileutils.h>
 #include <init.h>
 #include <settings.h>
+#include <utils.h>
 
 #include <kdsavefile.h>
 
-#include <QCoreApplication>
-#include <QtCore/QDebug>
-#include <QDir>
-#include <QDirIterator>
-#include <QDomAttr>
-#include <QDomDocument>
-#include <QFile>
-#include <QFileInfo>
-#include <QSettings>
-#include <QTemporaryFile>
-#include <QVector>
-#include <QProcess>
+#include <QtCore/QDirIterator>
+#include <QtCore/QProcess>
+#include <QtCore/QSettings>
+#include <QtCore/QTemporaryFile>
 
-#include <fstream>
 #include <iostream>
-
-#ifndef Q_WS_WIN
-#include <sys/types.h>
-#include <sys/stat.h>
-#endif
 
 using namespace QInstaller;
 using namespace QInstallerCreator;
-
-typedef QVector<PackageInfo> PackageInfoVector;
 
 struct Input {
     QString outputPath;
@@ -90,6 +73,7 @@ public:
             QFile::rename(bundle, backup);
         }
     }
+
     ~BundleBackup()
     {
         if (!backup.isEmpty()) {
@@ -98,7 +82,8 @@ public:
         }
     }
 
-    void release() const {
+    void release() const
+    {
         if (!backup.isEmpty())
             removeDirectory(backup);
         backup.clear();
@@ -109,12 +94,22 @@ private:
     mutable QString backup;
 };
 
+static void chmod755(const QString &absolutFilePath)
+{
+    QFile::setPermissions(absolutFilePath, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner
+        | QFile::ReadGroup | QFile::ExeGroup | QFile::ReadOther | QFile::ExeOther);
+}
+
 static int assemble(Input input, const QString &configdir)
 {
     const QString configfile = QFileInfo(configdir, QLatin1String("config.xml")).absoluteFilePath();
     const QInstaller::Settings &settings = QInstaller::Settings::fromFileAndPrefix(configfile, configdir);
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_LINUX
+Q_UNUSED(settings)
+#endif
+
+#ifdef Q_OS_MAC
     if (QFileInfo(input.installerExePath).isBundle()) {
         const QString bundle = input.installerExePath;
         // if the input file was a bundle
@@ -122,7 +117,7 @@ static int assemble(Input input, const QString &configdir)
             QSettings::NativeFormat);
         input.installerExePath = QString::fromLatin1("%1/Contents/MacOS/%2").arg(bundle)
             .arg(s.value(QLatin1String("CFBundleExecutable"),
-            QFileInfo(input.installerExePath).baseName()).toString());
+            QFileInfo(input.installerExePath).completeBaseName()).toString());
     }
 
     const bool createDMG = input.outputPath.endsWith(QLatin1String(".dmg"));
@@ -148,7 +143,7 @@ static int assemble(Input input, const QString &configdir)
 
         const QString iconFile = QFile::exists(settings.icon()) ? settings.icon()
             : QString::fromLatin1(":/resources/default_icon_mac.icns");
-        const QString iconTargetFile = fi.baseName() + QLatin1String(".icns");
+        const QString iconTargetFile = fi.completeBaseName() + QLatin1String(".icns");
         QFile::copy(iconFile, fi.filePath() + QLatin1String("/Contents/Resources/") + iconTargetFile);
 
         QFile infoPList(fi.filePath() + QLatin1String("/Contents/Info.plist"));
@@ -169,7 +164,7 @@ static int assemble(Input input, const QString &configdir)
         plistStream << QLatin1String("    <key>CFBundleSignature</key>") << endl;
         plistStream << QLatin1String("    <string> ???? </string>") << endl;
         plistStream << QLatin1String("    <key>CFBundleExecutable</key>") << endl;
-        plistStream << QLatin1String("    <string>") << fi.baseName() << QLatin1String("</string>")
+        plistStream << QLatin1String("    <string>") << fi.completeBaseName() << QLatin1String("</string>")
             << endl;
         plistStream << QLatin1String("    <key>CFBundleIdentifier</key>") << endl;
         plistStream << QLatin1String("    <string>com.yourcompany.installerbase</string>") << endl;
@@ -180,7 +175,7 @@ static int assemble(Input input, const QString &configdir)
         plistStream << QLatin1String("</plist>") << endl;
 
         input.outputPath = QString::fromLatin1("%1/Contents/MacOS/%2").arg(input.outputPath)
-            .arg(fi.baseName());
+            .arg(fi.completeBaseName());
     }
 #endif
 
@@ -207,13 +202,13 @@ static int assemble(Input input, const QString &configdir)
         // no error handling as this is not fatal
         setApplicationIcon(tempFile, settings.icon());
     }
-#elif defined(Q_WS_MAC)
+#elif defined(Q_OS_MAC)
     if (isBundle) {
         // no error handling as this is not fatal
         const QString copyscript = QDir::temp().absoluteFilePath(QLatin1String("copylibsintobundle.sh"));
         QFile::copy(QLatin1String(":/resources/copylibsintobundle.sh"), copyscript);
         QFile::rename(tempFile, input.outputPath);
-        ::chmod(qPrintable(copyscript), 0755);
+        chmod755(copyscript);
         QProcess p;
         p.start(copyscript, QStringList() << bundle);
         p.waitForFinished();
@@ -289,11 +284,11 @@ static int assemble(Input input, const QString &configdir)
         return 1;
     }
 #ifndef Q_OS_WIN
-    ::chmod(qPrintable(out.fileName()), 0755);
+    chmod755(out.fileName());
 #endif
     QFile::remove(tempFile);
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
     bundleBackup.release();
 
     if (createDMG) {
@@ -301,15 +296,15 @@ static int assemble(Input input, const QString &configdir)
         // no error handling as this is not fatal
         const QString mkdmgscript = QDir::temp().absoluteFilePath(QLatin1String("mkdmg.sh"));
         QFile::copy(QLatin1String(":/resources/mkdmg.sh"), mkdmgscript);
-        ::chmod(qPrintable(mkdmgscript), 0755);
+        chmod755(mkdmgscript);
+
         QProcess p;
-        p.start(mkdmgscript, QStringList() << QFileInfo(out.fileName()).baseName() << bundle);
+        p.start(mkdmgscript, QStringList() << QFileInfo(out.fileName()).fileName() << bundle);
         p.waitForFinished();
         QFile::remove(mkdmgscript);
         qDebug() <<  "done." << mkdmgscript;
     }
 #endif
-
     return 0;
 }
 
@@ -335,7 +330,7 @@ static int runRcc(const QStringList &args)
 class WorkingDirectoryChange
 {
 public:
-    explicit WorkingDirectoryChange(const QString& path)
+    explicit WorkingDirectoryChange(const QString &path)
         : oldPath(QDir::currentPath())
     {
         QDir::setCurrent(path);
@@ -392,45 +387,42 @@ static QStringList createBinaryResourceFiles(const QStringList &resources)
 static void printUsage()
 {
     const QString appName = QFileInfo(QCoreApplication::applicationFilePath()).fileName();
-    std::cout << "Usage: " << appName << " [options] target package1 [package2 ...]" << std::endl;
+    std::cout << "Usage: " << appName << " [options] target" << std::endl;
     std::cout << std::endl;
     std::cout << "Options:" << std::endl;
-    std::cout << "  -t|--template file     Use file as installer template binary" << std::endl;
-    std::cout << "                         If this parameter is not given, the template used"
-        << std::endl;
-    std::cout << "                         defaults to installerbase" << std::endl;
-    std::cout << "  -p|--packages dir      The directory containing the available packages."
-        << std::endl;
-    std::cout << "                         Defaults to the current working directory." << std::endl;
-    std::cout << "  -c|--config dir        The directory containing the installer configuration "
-        "files to use." << std::endl;
-    std::cout << "                         Mandatory." << std::endl;
-    std::cout << "  -n|--nodeps            Don't add dependencies of package1...n into the "
-        "installer (for online installers)" << std::endl;
-    std::cout << "  -e|--exclude p1,...,pn exclude the given packages and their dependencies from "
-        "the binary (for online installers)" << std::endl;
-    std::cout << "  --offline-only         Forces the installer to act as an offline installer, "
-        "i.e. never access online repositories" << std::endl;
-    std::cout << "  -v|--verbose           Verbose output" << std::endl;
-    std::cout << "  -r|--resources r1,.,rn include the given resource files into the binary" << std::endl;
+
+    std::cout << "  -t|--template file        Use file as installer template binary" << std::endl;
+    std::cout << "                            If this parameter is not given, the template used" << std::endl;
+    std::cout << "                            defaults to installerbase." << std::endl;
+
+    QInstallerTools::printRepositoryGenOptions();
+
+    std::cout << "  -n|--nodeps               Don't add dependencies of package1...n into the " << std::endl;
+    std::cout << "                            installer (for online installers)" << std::endl;
+
+    std::cout << "  --offline-only            Forces the installer to act as an offline installer, " << std::endl;
+    std::cout << "                            i.e. never access online repositories" << std::endl;
+
+    std::cout << "  -r|--resources r1,.,rn    include the given resource files into the binary" << std::endl;
     std::cout << std::endl;
+    std::cout << "  -v|--verbose              Verbose output" << std::endl;
     std::cout << "Packages are to be found in the current working directory and get listed as "
         "their names" << std::endl << std::endl;
     std::cout << "Example (offline installer):" << std::endl;
     std::cout << "  " << appName << " --offline-only -c installer-config -p packages-directory -t "
-        "installerbase SDKInstaller.exe com.nokia.sdk" << std::endl;
+        "installerbase SDKInstaller.exe" << std::endl;
     std::cout << "Creates an offline installer for the SDK, containing all dependencies." << std::endl;
     std::cout << std::endl;
     std::cout << "Example (online installer):" << std::endl;
     std::cout << "  " << appName << " -c installer-config -p packages-directory -e com.nokia.sdk.qt,"
-        "com.nokia.qtcreator -t installerbase SDKInstaller.exe com.nokia.sdk" << std::endl;
+        "com.nokia.qtcreator -t installerbase SDKInstaller.exe" << std::endl;
     std::cout << std::endl;
     std::cout << "Creates an installer for the SDK without qt and qt creator." << std::endl;
     std::cout << std::endl;
 }
 
-static QString createMetaDataDirectory(const PackageInfoVector &packages, const QString &packagesDir,
-    const QString &configdir)
+static QString createMetaDataDirectory(const QInstallerTools::PackageInfoVector &packages,
+    const QString &packagesDir, const QString &configdir)
 {
     const QString configfile = QFileInfo(configdir, "config.xml").absoluteFilePath();
     const QInstaller::Settings &settings = QInstaller::Settings::fromFileAndPrefix(configfile, QString());
@@ -449,7 +441,7 @@ static QString createMetaDataDirectory(const PackageInfoVector &packages, const 
         if (next.contains("/.")) // skip files that are in directories starting with a point
             continue;
 
-        qDebug() << "    Found configuration file: " << next;
+        qDebug() << "\tFound configuration file: " << next;
         const QFileInfo sourceFileInfo(next);
         const QString source = sourceFileInfo.absoluteFilePath();
         const QFileInfo targetFileInfo(configCopy, QFileInfo(next).fileName());
@@ -468,25 +460,18 @@ static QString createMetaDataDirectory(const PackageInfoVector &packages, const 
             QDomDocument dom;
             dom.setContent(&configXml);
             configXml.close();
-            QDomElement doc = dom.documentElement();
-            QDomElement privateKey = doc.elementsByTagName(QLatin1String("PrivateKey")).item(0).toElement();
-            if (!privateKey.isNull()) {
-                qDebug() << "      It contains the RSA private key, removing it...";
-                if (doc.removeChild(privateKey).isNull())
-                    throw Error(QObject::tr("Could not remove the private key from config.xml"));
-            }
 
-            // afterward, iterate over all child elements, searching for relative file names
-            const QDomNodeList children = doc.childNodes();
+            // iterate over all child elements, searching for relative file names
+            const QDomNodeList children = dom.documentElement().childNodes();
             for (int i = 0; i < children.count(); ++i) {
                 QDomElement el = children.at(i).toElement();
                 if (el.isNull())
                     continue;
 
                 QFileInfo fi(absoluteConfigPath, el.text());
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
                 const QFileInfo fiIcon(absoluteConfigPath, el.text() + QLatin1String(".icns"));
-#elif defined(Q_WS_WIN)
+#elif defined(Q_OS_WIN)
                 const QFileInfo fiIcon(absoluteConfigPath, el.text() + QLatin1String(".ico"));
 #else
                 const QFileInfo fiIcon(absoluteConfigPath, el.text() + QLatin1String(".png"));
@@ -514,7 +499,7 @@ static QString createMetaDataDirectory(const PackageInfoVector &packages, const 
             openForWrite(&configXml, configXml.fileName());
             QTextStream stream(&configXml);
             dom.save(stream, 4);
-            qDebug() << "      done.";
+            qDebug() << "\tdone.";
         }
     }
     return metapath;
@@ -527,23 +512,12 @@ static int printErrorAndUsageAndExit(const QString &err)
     return EXIT_FAILURE;
 }
 
-static PackageInfoVector filterBlacklisted(const PackageInfoVector &packages, const QStringList &blacklist)
-{
-    PackageInfoVector result;
-    foreach (const PackageInfo &info, packages) {
-        if (!blacklist.contains(info.name))
-            result.append(info);
-    }
-    return result;
-}
-
-/**
- * Usage:
- * binarycreator: [--help|-h] [-p|--packages packages directory] [-t|--template binary]
- * -c|--config confdir target component ...
- *
- * template defaults to installerbase[.exe] in the same directory
- */
+/*!
+    Usage:
+    binarycreator: [--help|-h] [-p|--packages packages directory] [-t|--template binary]
+        -c|--config confdir target component ...
+    template defaults to installerbase[.exe] in the same directory
+*/
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
@@ -551,7 +525,7 @@ int main(int argc, char **argv)
     QInstaller::init();
 
     QString templateBinary = QLatin1String("installerbase");
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
     templateBinary += QLatin1String(".exe");
 #endif
     if (!QFileInfo(templateBinary).exists())
@@ -564,7 +538,8 @@ int main(int argc, char **argv)
     bool offlineOnly = false;
     QStringList resources;
     QStringList components;
-    QStringList excludedPackages;
+    QStringList filteredPackages;
+    QInstallerTools::FilterType ftype = QInstallerTools::Exclude;
 
     const QStringList args = app.arguments().mid(1);
     for (QStringList::const_iterator it = args.begin(); it != args.end(); ++it) {
@@ -583,12 +558,28 @@ int main(int argc, char **argv)
             packagesDirectory = *it;
         } else if (*it == QLatin1String("-e") || *it == QLatin1String("--exclude")) {
             ++it;
+            if (!filteredPackages.isEmpty())
+                return printErrorAndUsageAndExit(QObject::tr("Error: --include and --exclude are mutually "
+                                                             "exclusive. Use either one or the other."));
             if (it == args.end() || it->startsWith(QLatin1String("-")))
                 return printErrorAndUsageAndExit(QObject::tr("Error: Package to exclude missing."));
-            excludedPackages = it->split(QLatin1Char(','));
-        } else if (*it == QLatin1String("-v") || *it == QLatin1String("--verbose")) {
+            filteredPackages = it->split(QLatin1Char(','));
+        } else if (*it == QLatin1String("-i") || *it == QLatin1String("--include")) {
+            ++it;
+            if (!filteredPackages.isEmpty())
+                return printErrorAndUsageAndExit(QObject::tr("Error: --include and --exclude are mutually "
+                                                             "exclusive. Use either one or the other."));
+            if (it == args.end() || it->startsWith(QLatin1String("-")))
+                return printErrorAndUsageAndExit(QObject::tr("Error: Package to include missing."));
+            filteredPackages = it->split(QLatin1Char(','));
+            ftype = QInstallerTools::Include;
+        }
+        else if (*it == QLatin1String("-v") || *it == QLatin1String("--verbose")) {
             QInstaller::setVerbose(true);
         } else if (*it == QLatin1String("-n") || *it == QLatin1String("--nodeps")) {
+            if (!filteredPackages.isEmpty())
+                return printErrorAndUsageAndExit(QObject::tr("for the --include and --exclude case you also "
+                                                             "have to ensure that nopdeps==false"));
             nodeps = true;
         } else if (*it == QLatin1String("--offline-only")) {
             offlineOnly = true;
@@ -625,6 +616,9 @@ int main(int argc, char **argv)
             if (it == args.end() || it->startsWith(QLatin1String("-")))
                 return printErrorAndUsageAndExit(QObject::tr("Error: Resource files to include missing."));
             resources = it->split(QLatin1Char(','));
+        } else if (*it == QLatin1String("--ignore-translations")
+            || *it == QLatin1String("--ignore-invalid-packages")) {
+                continue;
         } else {
             if (target.isEmpty())
                 target = *it;
@@ -633,11 +627,17 @@ int main(int argc, char **argv)
         }
     }
 
+    if (!components.isEmpty()) {
+        std::cout << "Package names at the end of the command are deprecated"
+                      " - please use --include or --exclude" << std::endl;
+        if (nodeps) {
+            filteredPackages.append(components);
+            ftype = QInstallerTools::Include;
+        }
+    }
+
     if (target.isEmpty())
         return printErrorAndUsageAndExit(QObject::tr("Error: Target parameter missing."));
-
-    if (components.isEmpty())
-        return printErrorAndUsageAndExit(QObject::tr("Error: No components selected."));
 
     if (configDir.isEmpty())
         return printErrorAndUsageAndExit(QObject::tr("Error: No configuration directory selected."));
@@ -645,84 +645,59 @@ int main(int argc, char **argv)
     qDebug() << "Parsed arguments, ok.";
 
     try {
-        const PackageInfoVector packageList = createListOfPackages(components, packagesDirectory, !nodeps);
-        const PackageInfoVector packages = filterBlacklisted(packageList, excludedPackages);
+        QInstallerTools::PackageInfoVector packages = createListOfPackages(packagesDirectory,
+            filteredPackages, ftype);
         const QString metaDir = createMetaDataDirectory(packages, packagesDirectory, configDir);
         {
             QSettings confInternal(metaDir + "/config/config-internal.ini", QSettings::IniFormat);
             confInternal.setValue(QLatin1String("offlineOnly"), offlineOnly);
         }
 
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
         // on mac, we enforce building a bundle
         if (!target.endsWith(QLatin1String(".app")) && !target.endsWith(QLatin1String(".dmg"))) {
             target += QLatin1String(".app");
         }
-#elif defined(Q_WS_WIN)
+#elif defined(Q_OS_WIN)
         // on windows, we add .exe
         if (!target.endsWith(QLatin1String(".exe")))
             target += QLatin1String(".exe");
 #endif
+        int result = EXIT_FAILURE;
+        {
+            Input input;
+            input.outputPath = target;
+            input.installerExePath = templateBinary;
+            input.binaryResourcePath = createBinaryResourceFile(metaDir);
+            input.binaryResources = createBinaryResourceFiles(resources);
 
-        Input input;
-        input.outputPath = target;
-        input.installerExePath = templateBinary;
-        input.binaryResourcePath = createBinaryResourceFile(metaDir);
-        input.binaryResources = createBinaryResourceFiles(resources);
+            QInstallerTools::copyComponentData(packagesDirectory, metaDir, packages);
 
-        const QString configfile = QFileInfo(configDir, QLatin1String("config.xml")).absoluteFilePath();
-        const QInstaller::Settings &settings = QInstaller::Settings::fromFileAndPrefix(configfile, configDir);
-        const QByteArray privateKey = settings.privateKey();
+            // now put the packages into the components section of the binary
+            foreach (const QInstallerTools::PackageInfo &info, packages) {
+                Component comp;
+                comp.setName(info.name.toUtf8());
 
-        KDUpdaterCrypto crypto;
-        crypto.setPrivateKey(privateKey);
-        ConsolePasswordProvider passwordProvider;
-        crypto.setPrivatePasswordProvider(&passwordProvider);
-        crypto.setPublicKey(settings.publicKey());
-
-        // now put the packages into the components section of the binary:
-        for (PackageInfoVector::const_iterator it = packages.begin(); it != packages.end(); ++it) {
-            qDebug() << "Creating component info for" << it->name;
-
-            Component comp;
-            comp.setName(it->name.toUtf8());
-            // append everything within the data directory
-            const QFileInfoList archives = QDir(QString::fromLatin1("%1/data").arg(it->directory))
-                .entryInfoList(QDir::NoDotAndDotDot | QDir::Dirs | QDir::Files);
-            foreach (const QFileInfo &archive, archives) {
-                const QSharedPointer<Archive> arch(new Archive(archive.absoluteFilePath()));
-                qDebug() << QString::fromLatin1("    Appending %1 (%2 bytes)")
-                    .arg(archive.filePath(), QString::number(arch->size()));
-                comp.appendArchive(arch);
-                if (!privateKey.isEmpty()) {
-                    qDebug() << "    Appending a RSA signature...";
-                    const QByteArray signature = crypto.sign(arch.data());
-                    if (signature.isEmpty())
-                        throw Error(QObject::tr("Could not create a RSA signature"));
-
-                    if (!crypto.verify(arch.data(), signature)) {
-                        throw Error(QObject::tr("Created RSA signature could not be verified. Is "
-                            "the given public key wrong?"));
-                    }
-                    qDebug() << QString::fromLatin1("    Appending %1.sig  (%2 bytes)")
-                        .arg(archive.fileName(), signature.size());
-                    const QSharedPointer<Archive> sigArch(new Archive(arch->name() + ".sig", signature));
-                    comp.appendArchive(sigArch);
+                qDebug() << "Creating component info for" << info.name;
+                foreach (const QString &archive, info.copiedArchives) {
+                    const QSharedPointer<Archive> arch(new Archive(archive));
+                    qDebug() << QString::fromLatin1("\tAppending %1 (%2 bytes)").arg(archive,
+                        QString::number(arch->size()));
+                    comp.appendArchive(arch);
                 }
+                input.components.insertComponent(comp);
             }
-            input.components.insertComponent(comp);
+
+            qDebug() << "Creating the binary";
+            result = assemble(input, configDir);
+
+            // cleanup
+            qDebug() << "Cleaning up...";
+            QFile::remove(input.binaryResourcePath);
+            foreach (const QString &resource, input.binaryResources)
+                QFile::remove(resource);
         }
-
-        qDebug() << "Creating the binary";
-        const int result = assemble(input, configDir);
-
-        // cleanup
-        qDebug() << "Cleaning up...";
-        QFile::remove(input.binaryResourcePath);
-        foreach (const QString &resource, input.binaryResources)
-            QFile::remove(resource);
         removeDirectory(metaDir);
-
         return result;
     } catch (const Error &e) {
         std::cerr << e.message() << std::endl;

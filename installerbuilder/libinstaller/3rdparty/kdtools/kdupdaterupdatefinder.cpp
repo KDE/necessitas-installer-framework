@@ -28,7 +28,6 @@
 #include "kdupdaterfiledownloader_p.h"
 #include "kdupdaterfiledownloaderfactory.h"
 #include "kdupdaterupdatesinfo_p.h"
-#include "kdupdatersignatureverifier.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -40,7 +39,7 @@ using namespace KDUpdater;
    \class KDUpdater::UpdateFinder kdupdaterupdatefinder KDUpdaterUpdateFinder
    \brief Finds updates applicable for a \ref KDUpdater::Application
 
-   The KDUpdater::UpdateFinder class helps in searching for updates and installing it on the application. The
+   The KDUpdater::UpdateFinder class helps in searching for updates and installing them on the application. The
    class basically processes the application's \ref KDUpdater::PackagesInfo and the UpdateXMLs it aggregates
    from all the update sources described in KDUpdater::UpdateSourcesInfo and populates a list of
    \ref KDUpdater::Update objects. This list can then be passed to \ref KDUpdater::UpdateInstaller for
@@ -65,11 +64,11 @@ using namespace KDUpdater;
    updateFinder.run();
    finderProgressDlg.exec();
 
-// Control comes here after update finding is done or canceled.
+   // Control comes here after update finding is done or canceled.
 
-QList<KDUpdater::Update*> updates = updateFinder.updates();
-KDUpdater::UpdateInstaller updateInstaller;
-updateInstaller.installUpdates( updates );
+   QList<KDUpdater::Update*> updates = updateFinder.updates();
+   KDUpdater::UpdateInstaller updateInstaller;
+   updateInstaller.installUpdates( updates );
 
 \endcode
 */
@@ -168,7 +167,7 @@ void UpdateFinder::Private::clear()
    associated with the application.
 
    \note Each time this function is called, all the previously computed updates are discarded
-and its resources are freed.
+   and its resources are freed.
 */
 void UpdateFinder::Private::computeUpdates()
 {
@@ -182,7 +181,7 @@ void UpdateFinder::Private::computeUpdates()
     // First do some quick sanity checks on the packages info
     PackagesInfo *packages = application->packagesInfo();
     if (!packages) {
-        q->reportError(tr("Could not access the package information of this application"));
+        q->reportError(tr("Could not access the package information of this application."));
         return;
     }
     if (!packages->isValid()) {
@@ -193,7 +192,7 @@ void UpdateFinder::Private::computeUpdates()
     // Now do some quick sanity checks on the update sources info
     UpdateSourcesInfo *sources = application->updateSourcesInfo();
     if (!sources) {
-        q->reportError(tr("Could not access the update sources information of this application"));
+        q->reportError(tr("Could not access the update sources information of this application."));
         return;
     }
     if (!sources->isValid()) {
@@ -216,7 +215,7 @@ void UpdateFinder::Private::computeUpdates()
     }
 
     // All done
-    q->reportProgress(100, tr("%1 updates found").arg(updates.count()));
+    q->reportProgress(100, tr("%1 updates found.").arg(updates.count()));
     q->reportDone();
 }
 
@@ -239,7 +238,7 @@ void UpdateFinder::Private::cancelComputeUpdates()
    have several update sources, hence we need to be asynchronous in downloading updates from different
    sources.
 
-   The function basically does this for each update source
+   The function basically does this for each update source:
    a) Create a KDUpdater::FileDownloader and KDUpdater::UpdatesInfo for each update
    b) Triggers the download of Updates.xml from each file downloader.
    c) The downloadCompleted(), downloadCanceled() and downloadAborted() signals are connected
@@ -262,8 +261,7 @@ bool UpdateFinder::Private::downloadUpdateXMLFiles()
         UpdateSourceInfo info = updateSources->updateSourceInfo(i);
         QUrl updateXmlUrl = QString::fromLatin1("%1/Updates.xml").arg(info.url.toString());
 
-        const SignatureVerifier *verifier = application->signatureVerifier(Application::Metadata);
-        FileDownloader *downloader = FileDownloaderFactory::instance().create(updateXmlUrl.scheme(), verifier, QUrl(), q);
+        FileDownloader *downloader = FileDownloaderFactory::instance().create(updateXmlUrl.scheme(), q);
         if (!downloader)
             continue;
 
@@ -299,13 +297,13 @@ bool UpdateFinder::Private::downloadUpdateXMLFiles()
             break;
 
         int pc = computePercent(downloadCompleteCount, updateXmlFDList.count());
-        q->reportProgress(pc, tr("Downloading Updates.xml from update-sources"));
+        q->reportProgress(pc, tr("Downloading Updates.xml from update sources."));
     }
 
     // All the downloaders have now either downloaded or aborted the
-    // donwload of update XML files.
+    // download of update XML files.
 
-    // Lets now get rid of update sources whose Updates.xml could not be downloaded
+    // Let's now get rid of update sources whose Updates.xml could not be downloaded
     for (int i = 0; i < updateXmlFDList.count(); i++) {
         FileDownloader *downloader = updateXmlFDList.at(i);
         if (downloader->isDownloaded())
@@ -350,7 +348,7 @@ bool UpdateFinder::Private::downloadUpdateXMLFiles()
     if (updatesInfoList.isEmpty())
         return false;
 
-    q->reportProgress(49, tr("Updates.xml file(s) downloaded from update sources"));
+    q->reportProgress(49, tr("Updates.xml file(s) downloaded from update sources."));
     return true;
 }
 
@@ -359,7 +357,7 @@ bool UpdateFinder::Private::downloadUpdateXMLFiles()
 
    This function runs through all the KDUpdater::UpdatesInfo objects created during
    the downloadUpdateXMLFiles() method and compares it with the data contained in
-   KDUpdater::PackagesInfo. There by figures out whether an update is applicable for
+   KDUpdater::PackagesInfo. Thereby figures out whether an update is applicable for
    this application or not.
 */
 bool UpdateFinder::Private::computeApplicableUpdates()
@@ -383,7 +381,7 @@ bool UpdateFinder::Private::computeApplicableUpdates()
             if (compatUpdateInfo.data.contains(QLatin1String("CompatLevel")) && updateSource.priority < compatUpdateSourceInfo.priority)
                 continue;
 
-            // Lets look for comapt updates that provide compat level one-higher than
+            // Let's look for compat updates that provide compat level one-higher than
             // the application's current compat level.
             QList<UpdateInfo> updatesInfo = info->updatesInfo(CompatUpdate, reqCompatLevel);
 
@@ -396,24 +394,22 @@ bool UpdateFinder::Private::computeApplicableUpdates()
 
         bool found = compatUpdateInfo.data.contains(QLatin1String("CompatLevel"));
         if (found) {
-            q->reportProgress(80, tr("Found compatibility update.."));
+            q->reportProgress(80, tr("Found compatibility update."));
 
-            // Lets create an update for this compat update.
-            QString updateName = tr("Compatibility level %1 update").arg(reqCompatLevel);
-            QUrl url;
-
+            // Create an update for this compat update.
             // Pick a update file based on arch and OS.
             int pickUpdateFileIndex = pickUpdateFileInfo(compatUpdateInfo.updateFiles);
             if (pickUpdateFileIndex < 0) {
-                q->reportError(tr("Compatibility update for the required architecture and hardware configuration was not found"));
-                q->reportProgress(100, tr("Compatibility update not found"));
+                q->reportError(tr("Compatibility update for the required architecture and hardware configuration was "
+                                  "not found."));
+                q->reportProgress(100, tr("Compatibility update not found."));
                 return false;
             }
 
             UpdateFileInfo fileInfo = compatUpdateInfo.updateFiles.at(pickUpdateFileIndex);
 
             // Create an update for this entry
-            url = QString::fromLatin1("%1/%2").arg( compatUpdateSourceInfo.url.toString(), fileInfo.fileName);
+            QUrl url = QString::fromLatin1("%1/%2").arg( compatUpdateSourceInfo.url.toString(), fileInfo.fileName);
             Update *update = q->constructUpdate(application, compatUpdateSourceInfo, CompatUpdate,
                                                 url, compatUpdateInfo.data, fileInfo.compressedSize,
                                                 fileInfo.uncompressedSize, fileInfo.sha1sum);
@@ -422,13 +418,13 @@ bool UpdateFinder::Private::computeApplicableUpdates()
             updates.append(update);
 
             // Done
-            q->reportProgress(100, tr("Compatibility update found"));
+            q->reportProgress(100, tr("Compatibility update found."));
         } else {
-            q->reportProgress(100, tr("No compatibility updates found"));
+            q->reportProgress(100, tr("No compatibility updates found."));
         }
     }
     if (updateType & PackageUpdate) {
-        // We are not looking for normal updates, not compat ones.
+        // We are looking for normal updates, not compat ones.
         for (int i = 0; i < updatesInfoList.count(); i++) {
             // Fetch updates applicable to this application.
             UpdatesInfo *info = updatesInfoList.at(i);
@@ -449,11 +445,11 @@ bool UpdateFinder::Private::computeApplicableUpdates()
             // Report progress
             int pc = computePercent(i, updatesInfoList.count());
             pc = computeProgressPercentage(51, 100, pc);
-            q->reportProgress(pc, tr("Computing applicable updates"));
+            q->reportProgress(pc, tr("Computing applicable updates."));
         }
     }
 
-    q->reportProgress(99, tr("Application updates computed"));
+    q->reportProgress(99, tr("Application updates computed."));
     return true;
 }
 
@@ -483,30 +479,11 @@ QList<UpdateInfo> UpdateFinder::Private::applicableUpdates(UpdatesInfo *updatesI
         QStringList apps = appName.split(QRegExp(QLatin1String("\\b(,|, )\\b")), QString::SkipEmptyParts);
         appNameIndex = apps.indexOf(this->application->applicationName());
 
-        // If the application appName isnt one of the app names, then
+        // If the application appName isn't one of the app names, then
         // the updates are not applicable.
         if (appNameIndex < 0)
             return retList;
     }
-
-#if 0
-    // Nokia-SDK: ignore ApplicationVersion, it has no purpose and just causes
-    // problems if someone bumps the config.xml application version accidentally
-    // Check to see if the update repository versions match with app version
-    if (!anyApp) {
-        QString appVersion = updatesInfo->applicationVersion();
-        appVersion = appVersion.replace(QLatin1String( ", " ), QLatin1String( "," ));
-        appVersion = appVersion.replace(QLatin1String( " ," ), QLatin1String( "," ));
-        QStringList versions = appVersion.split(QLatin1String( "," ), QString::SkipEmptyParts);
-
-        if (appNameIndex >= versions.count())
-            return retList; // please give us well formatted Updates.xml files.
-
-        QString version = versions.at(appNameIndex);
-        if (KDUpdater::compareVersion(this->application->applicationVersion(), version) != 0)
-            return retList;
-    }
-#endif
 
     // Check to see if version numbers match. This means that the version
     // number of the update should be greater than the version number of
@@ -521,7 +498,7 @@ QList<UpdateInfo> UpdateFinder::Private::applicableUpdates(UpdatesInfo *updatesI
 
             PackageInfo pkgInfo = packages->packageInfo(pkgInfoIdx);
 
-            // First check to see if the update version is more than package version
+            // First check to see if the update version is higher than package version
             QString updateVersion = updateInfo.data.value(QLatin1String("Version")).toString();
             QString pkgVersion = pkgInfo.version;
             if (KDUpdater::compareVersion(updateVersion, pkgVersion) <= 0)
@@ -537,7 +514,7 @@ QList<UpdateInfo> UpdateFinder::Private::applicableUpdates(UpdatesInfo *updatesI
                 continue;
         }
 
-        // Bingo!, we found an update :-)
+        // Bingo, we found an update :-)
         retList.append(updateInfo);
     }
 
@@ -760,7 +737,7 @@ void UpdateFinder::Private::slotDownloadDone()
 
     int pc = computePercent(downloadCompleteCount, updateXmlFDList.count());
     pc = computeProgressPercentage(0, 45, pc);
-    q->reportProgress( pc, tr("Downloading Updates.xml from update sources") );
+    q->reportProgress( pc, tr("Downloading Updates.xml from update sources.") );
 }
 
 /*!
@@ -813,7 +790,7 @@ int KDUpdater::compareVersion(const QString &v1, const QString &v2)
     if (v1 == v2)
         return 0;
 
-    // Split version numbers across .
+    // Split version numbers across "."
     const QStringList v1_comps = v1.split(QRegExp(QLatin1String( "\\.|-")));
     const QStringList v2_comps = v2.split(QRegExp(QLatin1String( "\\.|-")));
 

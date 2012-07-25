@@ -2,9 +2,9 @@
 **
 ** This file is part of Installer Framework
 **
-** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact: Nokia Corporation (info@qt.nokia.com)
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
 **
 ** GNU Lesser General Public License Usage
@@ -26,16 +26,129 @@
 ** conditions contained in a signed written agreement between you and Nokia.
 **
 ** If you have questions regarding the use of this file, please contact
-** Nokia at info@qt.nokia.com.
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
+
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
 
+#include <kdupdaterfiledownloader.h>
+#include <kdupdaterfiledownloaderfactory.h>
 #include <packagemanagercore.h>
 
+#include <QtCore/QFile>
+
 #include <QtGui/QItemSelectionModel>
+#include <QtGui/QMessageBox>
 #include <QtGui/QTreeWidget>
+
+#include <QtXml/QDomDocument>
+
+
+// -- TestRepositoryJob
+
+TestRepository::TestRepository(QObject *parent)
+    : KDJob(parent)
+    , m_downloader(0)
+{
+    setTimeout(10000);
+    setAutoDelete(false);
+    setCapabilities(Cancelable);
+}
+
+TestRepository::~TestRepository()
+{
+    if (m_downloader)
+        m_downloader->deleteLater();
+}
+
+void TestRepository::setRepository(const QInstaller::Repository &repository)
+{
+    cancel();
+
+    setError(NoError);
+    setErrorString(QString());
+    m_repository = repository;
+}
+
+void TestRepository::doStart()
+{
+    if (m_downloader)
+        m_downloader->deleteLater();
+
+    const QUrl url = m_repository.url();
+    if (url.isEmpty()) {
+        emitFinishedWithError(QInstaller::InvalidUrl, tr("Empty repository URL."));
+        return;
+    }
+
+    m_downloader = KDUpdater::FileDownloaderFactory::instance().create(url.scheme(), this);
+    if (!m_downloader) {
+        emitFinishedWithError(QInstaller::InvalidUrl, tr("URL scheme not supported: %1 (%2).")
+            .arg(url.scheme(), url.toString()));
+        return;
+    }
+
+    QAuthenticator auth;
+    auth.setUser(m_repository.username());
+    auth.setPassword(m_repository.password());
+    m_downloader->setAuthenticator(auth);
+
+    connect(m_downloader, SIGNAL(downloadCompleted()), this, SLOT(downloadCompleted()));
+    connect(m_downloader, SIGNAL(downloadAborted(QString)), this, SLOT(downloadAborted(QString)),
+        Qt::QueuedConnection);
+
+    m_downloader->setAutoRemoveDownloadedFile(true);
+    m_downloader->setUrl(QUrl(url.toString() + QString::fromLatin1("/Updates.xml")));
+
+    m_downloader->download();
+}
+
+void TestRepository::doCancel()
+{
+    if (m_downloader) {
+        m_downloader->cancelDownload();
+        emitFinishedWithError(KDJob::Canceled, m_downloader->errorString());
+    }
+}
+
+void TestRepository::downloadCompleted()
+{
+    QString errorMsg;
+    int error = QInstaller::DownloadError;
+
+    if (m_downloader->isDownloaded()) {
+        QFile file(m_downloader->downloadedFileName());
+        if (file.exists() && file.open(QIODevice::ReadOnly)) {
+            QDomDocument doc;
+            QString errorMsg;
+            if (!doc.setContent(&file, &errorMsg)) {
+                error = QInstaller::InvalidUpdatesXml;
+                errorMsg = tr("Could not parse Updates.xml! Error: %1.");
+            } else {
+                error = NoError;
+            }
+        } else {
+            errorMsg = tr("Updates.xml could not be opened for reading!");
+        }
+    } else {
+        errorMsg = tr("Updates.xml could not be found on server!");
+    }
+
+    if (error > NoError)
+        emitFinishedWithError(error, errorMsg);
+    else
+        emitFinished();
+
+    m_downloader->deleteLater();
+    m_downloader = 0;
+}
+
+void TestRepository::downloadAborted(const QString &reason)
+{
+    emitFinishedWithError(QInstaller::DownloadError, reason);
+}
 
 
 // -- PasswordDelegate
@@ -149,7 +262,7 @@ void RepositoryItem::setData(int column, int role, const QVariant &value)
                     m_repo.setPassword(value.toString());
                     break;
                 case 4:
-                    m_repo.setUrl(value.toUrl());
+                    m_repo.setUrl(QUrl::fromUserInput(value.toString()));
                     break;
                 default:
                     break;
@@ -226,12 +339,14 @@ SettingsDialog::SettingsDialog(QInstaller::PackageManagerCore *core, QWidget *pa
     connect(m_ui->m_addRepository, SIGNAL(clicked()), this, SLOT(addRepository()));
     connect(m_ui->m_showPasswords, SIGNAL(clicked()), this, SLOT(updatePasswords()));
     connect(m_ui->m_removeRepository, SIGNAL(clicked()), this, SLOT(removeRepository()));
-    connect(m_ui->m_useTmpRepositories, SIGNAL(clicked(bool)), this, SLOT(useTmpRepositories(bool)));
+    connect(m_ui->m_useTmpRepositories, SIGNAL(clicked(bool)), this, SLOT(useTmpRepositoriesOnly(bool)));
     connect(m_ui->m_repositoriesView, SIGNAL(currentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)),
         this, SLOT(currentRepositoryChanged(QTreeWidgetItem*, QTreeWidgetItem*)));
+    connect(m_ui->m_testRepository, SIGNAL(clicked()), this, SLOT(testRepository()));
 
-    useTmpRepositories(settings.hasReplacementRepos());
+    useTmpRepositoriesOnly(settings.hasReplacementRepos());
     m_ui->m_useTmpRepositories->setChecked(settings.hasReplacementRepos());
+    m_ui->m_useTmpRepositories->setEnabled(settings.hasReplacementRepos());
     m_ui->m_repositoriesView->setCurrentItem(m_rootItems.at(settings.hasReplacementRepos()));
 }
 
@@ -300,6 +415,40 @@ void SettingsDialog::addRepository()
         m_ui->m_repositoriesView->editItem(item, 4);
         m_ui->m_repositoriesView->scrollToItem(item);
         m_ui->m_repositoriesView->setCurrentItem(item);
+
+        if (parent == m_rootItems.value(1))
+            m_ui->m_useTmpRepositories->setEnabled(parent->childCount() > 0);
+    }
+}
+
+void SettingsDialog::testRepository()
+{
+    RepositoryItem *current = dynamic_cast<RepositoryItem*> (m_ui->m_repositoriesView->currentItem());
+    if (current && !m_rootItems.contains(current)) {
+        m_ui->tabWidget->setEnabled(false);
+        m_ui->buttonBox->setEnabled(false);
+
+        m_testRepository.setRepository(current->repository());
+        m_testRepository.start();
+        m_testRepository.waitForFinished();
+
+        if (m_testRepository.error() > KDJob::NoError) {
+            QMessageBox msgBox(this);
+            msgBox.setIcon(QMessageBox::Question);
+            msgBox.setWindowModality(Qt::WindowModal);
+            msgBox.setDetailedText(m_testRepository.errorString());
+            msgBox.setText(tr("There was an error testing this repository."));
+            msgBox.setInformativeText(tr("Do you want to disable the tested repository?"));
+
+            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            msgBox.setDefaultButton(QMessageBox::Yes);
+
+            if (msgBox.exec() == QMessageBox::Yes)
+                current->setData(1, Qt::CheckStateRole, Qt::Unchecked);
+        }
+
+        m_ui->tabWidget->setEnabled(true);
+        m_ui->buttonBox->setEnabled(true);
     }
 }
 
@@ -318,12 +467,18 @@ void SettingsDialog::removeRepository()
     QTreeWidgetItem *item = m_ui->m_repositoriesView->currentItem();
     if (item && !m_rootItems.contains(item)) {
         QTreeWidgetItem *parent = item->parent();
-        if (parent)
+        if (parent) {
             delete parent->takeChild(parent->indexOfChild(item));
+            if (parent == m_rootItems.value(1) && parent->childCount() <= 0) {
+                useTmpRepositoriesOnly(false);
+                m_ui->m_useTmpRepositories->setChecked(false);
+                m_ui->m_useTmpRepositories->setEnabled(false);
+            }
+        }
     }
 }
 
-void SettingsDialog::useTmpRepositories(bool use)
+void SettingsDialog::useTmpRepositoriesOnly(bool use)
 {
     m_rootItems.at(0)->setDisabled(use);
     m_rootItems.at(2)->setDisabled(use);
@@ -334,6 +489,7 @@ void SettingsDialog::currentRepositoryChanged(QTreeWidgetItem *current, QTreeWid
     Q_UNUSED(previous)
     if (current) {
         const int index = m_rootItems.at(0)->indexOfChild(current);
+        m_ui->m_testRepository->setEnabled(!m_rootItems.contains(current));
         m_ui->m_removeRepository->setEnabled(!current->data(0, Qt::UserRole).toBool());
         m_ui->m_addRepository->setEnabled((current != m_rootItems.at(0)) & (index == -1));
     }
