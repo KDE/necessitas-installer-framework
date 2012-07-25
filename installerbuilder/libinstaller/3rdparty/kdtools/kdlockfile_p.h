@@ -28,6 +28,7 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
+#include <unistd.h>
 
 class KDLockFile::Private
 {
