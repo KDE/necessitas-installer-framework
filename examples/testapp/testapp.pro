@@ -1,5 +1,5 @@
 TEMPLATE = app
-TARGET = 
+TARGET =
 
 include( ../../installerbuilder/libinstaller/libinstaller.pri )
 LIBS = -L$$OUT_PWD/../../installerbuilder/lib -linstaller $$LIBS

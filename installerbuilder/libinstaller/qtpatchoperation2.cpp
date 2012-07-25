@@ -37,7 +37,7 @@
 #endif
 
 #include "constants.h"
-#include "common/utils.h"
+#include "utils.h"
 #include <packagemanagercore.h>
 
 #include <QMap>

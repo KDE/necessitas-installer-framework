@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2012 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,13 +17,19 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
+
 #include "setexamplespathonqtoperation.h"
 
 #include "qtpatch.h"
@@ -55,7 +55,7 @@ bool SetExamplesPathOnQtOperation::performOperation()
 
     if (args.count() != 2) {
         setError(InvalidArguments);
-        setErrorString(tr("Invalid arguments in %0: %1 arguments given, exact 2 expected.").arg(name())
+        setErrorString(tr("Invalid arguments in %0: %1 arguments given, exactly 2 expected.").arg(name())
             .arg(arguments().count()));
         return false;
     }
@@ -73,8 +73,8 @@ bool SetExamplesPathOnQtOperation::performOperation()
 
     if (qmakeValueHash.isEmpty()) {
         setError(UserDefinedError);
-        setErrorString(tr("The output of \n%1 -query\n is not parseable. Please file a bugreport with this "
-            "dialog http://bugreports.qt.nokia.com.\noutput: \"%2\"").arg(QDir::toNativeSeparators(qmakePath),
+        setErrorString(tr("The output of \n%1 -query\nis not parseable. Please file a bugreport with this "
+            "dialog https://bugreports.qt-project.org.\noutput: %2").arg(QDir::toNativeSeparators(qmakePath),
             QString::fromUtf8(qmakeOutput)));
         return false;
     }
@@ -87,7 +87,7 @@ bool SetExamplesPathOnQtOperation::performOperation()
 
     if (255 < newValue.size()) {
         setError(UserDefinedError);
-        setErrorString(tr("Qt patch error: new Qt example path(%1)\n needs to be less than 255 characters.")
+        setErrorString(tr("Qt patch error: new Qt example path (%1)\nneeds to be less than 255 characters.")
             .arg(QString::fromLocal8Bit(newValue)));
         return false;
     }
@@ -104,7 +104,7 @@ bool SetExamplesPathOnQtOperation::performOperation()
 
     bool isPatched = QtPatch::patchBinaryFile(qmakePath, oldValue, newValue);
     if (!isPatched) {
-        qDebug() << "qpatch: warning: could not patched the example path in" << qmakePath;
+        qDebug() << "qpatch: warning: could not patch the example path in" << qmakePath;
     }
 
     return true;

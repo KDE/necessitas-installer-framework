@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2012 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,17 +17,22 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "component.h"
 
-#include "common/errors.h"
-#include "common/fileutils.h"
+#include "errors.h"
+#include "fileutils.h"
 #include "fsengineclient.h"
 #include "lib7z_facade.h"
 #include "packagemanagercore.h"
@@ -505,16 +504,26 @@ void Component::loadUserInterfaces(const QDir &directory, const QStringList &uis
     }
 }
 
-
+/*!
+  Loads the text of the Licenses contained in the licenseHash.
+  This is saved into a new hash containing the filename and the text of that file.
+*/
 void Component::loadLicenses(const QString &directory, const QHash<QString, QVariant> &licenseHash)
 {
     QHash<QString, QVariant>::const_iterator it;
     for (it = licenseHash.begin(); it != licenseHash.end(); ++it) {
         const QString &fileName = it.value().toString();
-        QFile file(directory + fileName);
+        QFileInfo fileInfo(fileName);
+        QFile file(QString::fromLatin1("%1%2_%3.%4").arg(directory, fileInfo.baseName(),
+            QLocale().name().toLower(), fileInfo.completeSuffix()));
         if (!file.open(QIODevice::ReadOnly)) {
-            throw Error(tr("Could not open the requested license file at %1: %2").arg(fileName,
-                file.errorString()));
+            // No translated license, use untranslated file
+            qDebug("Unable to open translated license file. Using untranslated fallback.");
+            file.setFileName(directory + fileName);
+            if (!file.open(QIODevice::ReadOnly)) {
+                throw Error(tr("Could not open the requested license file at %1: %2").arg(fileName,
+                    file.errorString()));
+            }
         }
         d->m_licenses.insert(it.key(), qMakePair(fileName, QTextStream(&file).readAll()));
     }
@@ -557,8 +566,8 @@ void Component::createOperationsForPath(const QString &path)
 {
     const QFileInfo fi(path);
 
-    // don't copy over a signature
-    if (fi.suffix() == QLatin1String("sig") && QFileInfo(fi.dir(), fi.completeBaseName()).exists())
+    // don't copy over a checksum file
+    if (fi.suffix() == QLatin1String("sha1") && QFileInfo(fi.dir(), fi.completeBaseName()).exists())
         return;
 
     // the script can override this method
@@ -1180,7 +1189,7 @@ void Component::updateModelData(const QString &key, const QString &data)
         setData(QLatin1String("<html><body>") + value(scDescription) + QLatin1String("</body></html>"),
             Qt::ToolTipRole);
     } else {
-        setData(value(scDescription) + QLatin1String("<br><br>Update Info: ") + updateInfo, Qt::ToolTipRole);
+        setData(value(scDescription) + QLatin1String("<br><br>") + tr("Update Info: ") + updateInfo, Qt::ToolTipRole);
     }
 }
 

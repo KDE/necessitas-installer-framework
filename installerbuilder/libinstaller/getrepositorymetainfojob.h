@@ -1,10 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2010 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2010-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
+**
 **
 ** GNU Lesser General Public License Usage
 **
@@ -16,27 +17,31 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #ifndef GETREPOSITORYMETAINFOJOB_H
 #define GETREPOSITORYMETAINFOJOB_H
 
-#include <kdjob.h>
+#include "fileutils.h"
+#include "installer_global.h"
+#include "repository.h"
+
+#include "kdjob.h"
 
 #include <QtCore/QPointer>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QThreadPool>
-
-#include <common/fileutils.h>
-#include <common/repository.h>
-
-#include "installer_global.h"
 
 namespace KDUpdater {
     class FileDownloader;
@@ -88,7 +93,6 @@ private:
     bool m_canceled;
     int m_silentRetries;
     int m_retriesLeft;
-    const QByteArray m_publicKey;
     Repository m_repository;
     QStringList m_packageNames;
     QStringList m_packageVersions;

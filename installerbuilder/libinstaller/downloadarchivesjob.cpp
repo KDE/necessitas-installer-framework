@@ -1,17 +1,11 @@
 /**************************************************************************
 **
-** This file is part of Qt SDK**
+** This file is part of Installer Framework
 **
-** Copyright (c) 2012 Nokia Corporation and/or its subsidiary(-ies).*
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Nokia Corporation qt-info@nokia.com**
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** No Commercial Usage
-**
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -23,23 +17,27 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception version
-** 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** rights. These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you are unsure which license is appropriate for your use, please contact
-** (qt-info@nokia.com).
+** Other Usage
+**
+** Alternatively, this file may be used in accordance with the terms and
+** conditions contained in a signed written agreement between you and Nokia.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "downloadarchivesjob.h"
 
-#include "common/binaryformatenginehandler.h"
+#include "binaryformatenginehandler.h"
 #include "component.h"
-#include "cryptosignatureverifier.h"
 #include "messageboxhandler.h"
 #include "packagemanagercore.h"
 
-#include <kdupdaterfiledownloader.h>
-#include <kdupdaterfiledownloaderfactory.h>
+#include "kdupdaterfiledownloader.h"
+#include "kdupdaterfiledownloaderfactory.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QTimerEvent>
@@ -51,14 +49,13 @@ using namespace KDUpdater;
 /*!
     Creates a new DownloadArchivesJob with \a parent.
 */
-DownloadArchivesJob::DownloadArchivesJob(const QByteArray &publicKey, PackageManagerCore *core)
+DownloadArchivesJob::DownloadArchivesJob(PackageManagerCore *core)
     : KDJob(core),
       m_core(core),
       m_downloader(0),
       m_archivesDownloaded(0),
       m_archivesToDownloadCount(0),
       m_canceled(false),
-      m_publicKey(publicKey),
       m_lastFileProgress(0),
       m_progressChangedTimerId(0)
 {
@@ -73,7 +70,7 @@ DownloadArchivesJob::~DownloadArchivesJob()
 {
     foreach (const QString &fileName, m_temporaryFiles) {
         QFile file(fileName);
-        if (!file.remove())
+        if (file.exists() && !file.remove())
             qWarning("Could not delete file %s: %s", qPrintable(fileName), qPrintable(file.errorString()));
     }
 
@@ -302,17 +299,12 @@ void DownloadArchivesJob::finishWithError(const QString &error)
 KDUpdater::FileDownloader *DownloadArchivesJob::setupDownloader(const QString &prefix)
 {
     KDUpdater::FileDownloader *downloader = 0;
-    const QString targetUrl = m_archivesToDownload.first().second;
-    const QString registerPath = m_archivesToDownload.first().first;
-
-    const QFileInfo fi = QFileInfo(registerPath);
+    const QFileInfo fi = QFileInfo(m_archivesToDownload.first().first);
     const Component *const component = m_core->componentByName(QFileInfo(fi.path()).fileName());
     if (component) {
-        const QUrl url(targetUrl + prefix);
+        const QUrl url(m_archivesToDownload.first().second + prefix);
         const QString &scheme = url.scheme();
-        const CryptoSignatureVerifier verifier(m_publicKey);
-        downloader = FileDownloaderFactory::instance().create(scheme, m_publicKey.isEmpty() ? 0 : &verifier,
-            QUrl(targetUrl + QLatin1String(".sig")), this);
+        downloader = FileDownloaderFactory::instance().create(scheme, this);
 
         if (downloader) {
             downloader->setUrl(url);

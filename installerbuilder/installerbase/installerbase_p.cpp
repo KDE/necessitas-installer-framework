@@ -2,9 +2,9 @@
 **
 ** This file is part of Installer Framework
 **
-** Copyright (c) 2012 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact: Nokia Corporation (info@qt.nokia.com)
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
 **
 ** GNU Lesser General Public License Usage
@@ -26,22 +26,21 @@
 ** conditions contained in a signed written agreement between you and Nokia.
 **
 ** If you have questions regarding the use of this file, please contact
-** Nokia at info@qt.nokia.com.
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #include "installerbase_p.h"
 
-#include <common/binaryformat.h>
-#include <common/errors.h>
-#include <common/fileutils.h>
-#include <common/utils.h>
+#include <binaryformat.h>
+#include <errors.h>
+#include <fileutils.h>
 #include <lib7z_facade.h>
 #include <qprocesswrapper.h>
-
-#include <kdupdaterfiledownloader.h>
-#include <kdupdaterfiledownloaderfactory.h>
+#include <utils.h>
 
 #include <kdsavefile.h>
+#include <kdupdaterfiledownloader.h>
+#include <kdupdaterfiledownloaderfactory.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
@@ -55,19 +54,19 @@
 #include <iostream>
 
 #ifdef Q_OS_WIN
-#include <wincon.h>
+#   include <wincon.h>
 
-#ifndef ENABLE_INSERT_MODE
-#   define ENABLE_INSERT_MODE 0x0020
-#endif
+#   ifndef ENABLE_INSERT_MODE
+#       define ENABLE_INSERT_MODE 0x0020
+#   endif
 
-#ifndef ENABLE_QUICK_EDIT_MODE
-#   define ENABLE_QUICK_EDIT_MODE 0x0040
-#endif
+#   ifndef ENABLE_QUICK_EDIT_MODE
+#       define ENABLE_QUICK_EDIT_MODE 0x0040
+#   endif
 
-#ifndef ENABLE_EXTENDED_FLAGS
-#   define ENABLE_EXTENDED_FLAGS 0x0080
-#endif
+#   ifndef ENABLE_EXTENDED_FLAGS
+#       define ENABLE_EXTENDED_FLAGS 0x0080
+#   endif
 #endif
 
 using namespace KDUpdater;
@@ -205,15 +204,17 @@ static bool supportedScheme(const QString &scheme)
 
 int InstallerBase::replaceMaintenanceToolBinary(QStringList arguments)
 {
-    QInstaller::setVerbose(arguments.contains(QLatin1String("--verbose")));
+    QInstaller::setVerbose(arguments.contains(QLatin1String("--verbose"))
+                           || arguments.contains(QLatin1String("-v")));
 
     arguments.removeAll(QLatin1String("--verbose"));
+    arguments.removeAll(QLatin1String("-v"));
     arguments.removeAll(QLatin1String("--update-installerbase"));
 
     QUrl url = arguments.value(1);
     if (!supportedScheme(url.scheme()) && QFileInfo(url.toString()).exists())
         url = QLatin1String("file:///") + url.toString();
-    m_downloader.reset(FileDownloaderFactory::instance().create(url.scheme()));
+    m_downloader.reset(FileDownloaderFactory::instance().create(url.scheme(), 0));
     if (m_downloader.isNull()) {
         qDebug() << QString::fromLatin1("Scheme not supported: %1 (%2)").arg(url.scheme(), url.toString());
         return EXIT_FAILURE;
@@ -303,7 +304,7 @@ void InstallerBase::showUsage()
     std::cout << std::setw(55) << std::setiosflags(std::ios::left) << "  --verbose" << std::setw(40)
         << "Show debug output on the console" << std::endl;
 
-    std::cout << "Developer:"<< std::endl;
+    std::cout << "\nDeveloper:"<< std::endl;
     std::cout << std::setw(55) << std::setiosflags(std::ios::left)
         << "  --runoperation [operationName] [arguments...]" << std::setw(40)
         << "Perform an operation with a list of arguments" << std::endl;
@@ -314,11 +315,16 @@ void InstallerBase::showUsage()
         << "  --script [scriptName]" << std::setw(40) << "Execute a script" << std::endl;
     std::cout << std::setw(55) << std::setiosflags(std::ios::left) << "  --no-force-installations"
         << std::setw(40) << "Enable deselection of forced components" << std::endl;
+    std::cout << std::setw(55) << std::setiosflags(std::ios::left) << "  --addRepository [URI]"
+        << std::setw(40) << "Add a local or remote repo to the list of user defined repos." << std::endl;
     std::cout << std::setw(55) << std::setiosflags(std::ios::left) << "  --addTempRepository [URI]"
-        << std::setw(40) << "Add a local or remote repo to the list of available repos." << std::endl;
+        << std::setw(40) << "Add a local or remote repo to the list of temporary available repos."
+        << std::endl;
     std::cout << std::setw(55) << std::setiosflags(std::ios::left) << "  --setTempRepository [URI]"
-        << std::setw(40) << "Set the update URL to an arbitrary local or remote URI. URI must be prefixed "
-        "with the protocol, i.e. file:/// or http://" << std::endl;
+        << std::setw(40) << "Set a local or remote repo as tmp repo, it is the only one used during fetch."
+        << std::endl;
+    std::cout << std::setw(55) << std::setiosflags(std::ios::left) << " " << std::setw(40) << "Note: URI "
+        "must be prefixed with the protocol, i.e. file:/// , http:// or ftp://" << std::endl;
     std::cout << std::setw(55) << std::setiosflags(std::ios::left) << "  --show-virtual-components"
         << std::setw(40) << "Show virtual components in package manager and updater" << std::endl;
     std::cout << std::setw(55) << std::setiosflags(std::ios::left)

@@ -2,9 +2,9 @@
 **
 ** This file is part of Installer Framework
 **
-** Copyright (c) 2012 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (c) 2011-2012 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact: Nokia Corporation (info@qt.nokia.com)
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
 **
 ** GNU Lesser General Public License Usage
@@ -26,14 +26,16 @@
 ** conditions contained in a signed written agreement between you and Nokia.
 **
 ** If you have questions regarding the use of this file, please contact
-** Nokia at info@qt.nokia.com.
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 #ifndef SETTINGSDIALOG_H
 #define SETTINGSDIALOG_H
 
-#include <common/repository.h>
+#include <repository.h>
 #include <settings.h>
+
+#include <kdjob.h>
 
 #include <QtGui/QDialog>
 #include <QtGui/QStyledItemDelegate>
@@ -44,13 +46,45 @@ class QLocale;
 class QVariant;
 QT_END_NAMESPACE
 
-namespace Ui {
-    class SettingsDialog;
+namespace KDUpdater {
+    class FileDownloader;
 }
 
 namespace QInstaller {
     class PackageManagerCore;
 }
+
+namespace Ui {
+    class SettingsDialog;
+}
+
+
+// -- TestRepositoryJob
+
+class TestRepository : public KDJob
+{
+    Q_OBJECT
+
+public:
+
+    TestRepository(QObject *parent = 0);
+    ~TestRepository();
+
+    void setRepository(const QInstaller::Repository &repository);
+
+private:
+    void doStart();
+    void doCancel();
+
+private Q_SLOTS:
+    void downloadCompleted();
+    void downloadAborted(const QString &reason);
+
+private:
+    QInstaller::Repository m_repository;
+    KDUpdater::FileDownloader *m_downloader;
+};
+
 
 // -- PasswordDelegate
 
@@ -115,9 +149,10 @@ signals:
 
 private slots:
     void addRepository();
+    void testRepository();
     void updatePasswords();
     void removeRepository();
-    void useTmpRepositories(bool use);
+    void useTmpRepositoriesOnly(bool use);
     void currentRepositoryChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 
 private:
@@ -130,6 +165,7 @@ private:
     QInstaller::PackageManagerCore *m_core;
 
     bool m_showPasswords;
+    TestRepository m_testRepository;
     QList<QTreeWidgetItem*> m_rootItems;
 };
 
