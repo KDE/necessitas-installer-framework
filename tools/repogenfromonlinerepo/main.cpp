@@ -58,8 +58,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    QString repoUrl = QLatin1String("http://www.forum.nokia.com/nokiaqtsdkrepository/oppdatering/windows/"
-        "online_ndk_repo");
+    QString repoUrl = QLatin1String("http://nds2.fds-forum.nokia.com/nokiaqtsdkrepository/fremtiden/linux/x64/online_qtsdk_repo");
 
     QStringList args = app.arguments();
     for( QStringList::const_iterator it = args.constBegin(); it != args.constEnd(); ++it )
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
     DownloadManager downloadManager;
 
 // get Updates.xml to get to know what we can download
-    downloadManager.append(QUrl(repoUrl + QLatin1String("/Updates.xml")));
+    downloadManager.append(QUrl(repoUrl + QLatin1String("/Updates.xml?-1586457921")));
     QObject::connect( &downloadManager, SIGNAL( finished() ), &downloadEventLoop, SLOT( quit() ) );
     downloadEventLoop.exec();
 // END - get Updates.xml to get to know what we can download
