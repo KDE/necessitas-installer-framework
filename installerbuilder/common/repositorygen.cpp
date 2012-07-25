@@ -467,12 +467,14 @@ PackageInfoVector QInstallerTools::createListOfPackages(const QString &packagesD
         info.name = name;
         info.version = doc.firstChildElement(QLatin1String("Package")).
             firstChildElement(QLatin1String("Version")).text();
+/*
         if (!QRegExp(QLatin1String("[0-9]+((\\.|-)[0-9]+)*")).exactMatch(info.version)) {
             if (ignoreInvalidPackages)
                 continue;
             throw QInstaller::Error(QObject::tr("Component version for %1 is invalid! <Version>%2</version>")
                 .arg(it->fileName(), info.version));
         }
+*/
         info.dependencies = doc.firstChildElement(QLatin1String("Package")).
             firstChildElement(QLatin1String("Dependencies")).text().split(QRegExp(QLatin1String("\\b(,|, )\\b")),
             QString::SkipEmptyParts);
