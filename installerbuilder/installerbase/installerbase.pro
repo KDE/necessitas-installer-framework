@@ -29,6 +29,8 @@ defineTest(testQmFiles) {
     return(true)
 }
 
+win32-g++: LIBS += mpr.lib
+
 if (testQmFiles()) {
 RESOURCES += installerbase.qrc
 }
