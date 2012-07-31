@@ -20,4 +20,4 @@ SOURCES = binarycreator.cpp \
           repositorygen.cpp
 HEADERS = rcc.h
 win32:!win32-g++: LIBS += shell32.lib
-win32-g++: LIBS += -lshell32
+win32-g++: LIBS += -lshell32 -lmpr

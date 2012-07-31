@@ -16,3 +16,5 @@ include(../libinstaller/libinstaller.pri)
 SOURCES += repogen.cpp \
            repositorygen.cpp
 HEADERS += repositorygen.h
+
+win32-g++: LIBS += -lmpr

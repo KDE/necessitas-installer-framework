@@ -16,6 +16,8 @@ CONFIG += help
 
 CONFIG -= app_bundle
 
+win32-g++: LIBS += -lmpr
+
 include(../libinstaller/libinstaller.pri)
 
 QM_FILES = qt_de.qm de_de.qm en_us.qm
@@ -28,8 +30,6 @@ defineTest(testQmFiles) {
     }
     return(true)
 }
-
-win32-g++: LIBS += mpr.lib
 
 if (testQmFiles()) {
 RESOURCES += installerbase.qrc

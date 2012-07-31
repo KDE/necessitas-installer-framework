@@ -10,6 +10,8 @@ CONFIG -= app_bundle
 
 QT += xml
 
+win32-g++: LIBS += -lmpr
+
 include(../libinstaller/libinstaller.pri)
 
 # Input
