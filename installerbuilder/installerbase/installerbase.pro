@@ -16,7 +16,7 @@ CONFIG += help
 
 CONFIG -= app_bundle
 
-win32-g++: LIBS += -lmpr
+win32-g++*: LIBS += -lmpr
 
 include(../libinstaller/libinstaller.pri)
 

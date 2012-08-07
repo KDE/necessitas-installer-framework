@@ -17,4 +17,4 @@ SOURCES += repogen.cpp \
            repositorygen.cpp
 HEADERS += repositorygen.h
 
-win32-g++: LIBS += -lmpr
+win32-g++*: LIBS += -lmpr
