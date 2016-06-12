@@ -9,7 +9,7 @@
     Each component can specify one script, which is loaded and run by the
     installer. The format has to be compatible to QScriptEngine.
 
-    \section1 Contruction
+    \section1 Construction
 
     The script has to provide an object Component, which will be created by the
     Installer when loading the script. Therefore the script must contains at

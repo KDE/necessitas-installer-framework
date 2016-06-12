@@ -191,7 +191,7 @@ Such files can be generated using the script test-framework/checker/scripts/gene
 
 ==== Windows Registry ====
 
-Similar to .filelist, .registrylist files can be used to check for the existance and content of windows registry keys.
+Similar to .filelist, .registrylist files can be used to check for the existence and content of windows registry keys.
 
 The format is
 

@@ -102,9 +102,9 @@
 
   Each component can have one or more components it depends on. This can be other real or virtual components. Every
   dependency as defined via its identifier and optionally its version. The version, if given, is separated by the identifier
-  by a dash ('-') and can be prefixed by a comparision operator like '=', '>', '<', '>=' or '<=', which means that the version
+  by a dash ('-') and can be prefixed by a comparison operator like '=', '>', '<', '>=' or '<=', which means that the version
   of the matching package is compared to the required version and has to be \a equal, \a greater, \a less, \a greater \a or \a equal or 
-  \a less \a or \a equal as the version number given in the dependency. If no comparision operator is given, it defaults to '='.
+  \a less \a or \a equal as the version number given in the dependency. If no comparison operator is given, it defaults to '='.
 
   \subsection componenttranslation Component Translation
 

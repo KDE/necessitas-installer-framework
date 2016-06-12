@@ -42,7 +42,7 @@ using namespace KDUpdater;
 
 /*!
     Copied from QInstaller with some adjustments
-    Return true, if a process with \a name is running. On Windows, the comparision is case-insensitive.
+    Return true, if a process with \a name is running. On Windows, the comparison is case-insensitive.
 */
 static bool isProcessRunning(const QString &name, const QList<ProcessInfo> &processes)
 {

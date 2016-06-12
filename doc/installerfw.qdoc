@@ -136,7 +136,7 @@
         \o \bold{ UninstallerName} File name of the generated uninstaller. Defaults to "uninstall". The platform specific executable suffixs is appended.
     \endlist
 
-    It is suggested that you place all files that are reffered inside the
+    It is suggested that you place all files that are referred inside the
     configuration also into the config directory. However, you can also use
     relative paths, which the tools will resolve relative to the location of
     the config.xml file.

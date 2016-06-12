@@ -127,7 +127,7 @@ bool MacReplaceInstallNamesOperation::apply(const QString &indicator, const QStr
             && !fileName.endsWith(QLatin1String(".cpp")) && !fileName.endsWith(QLatin1String(".pro"))
             && !fileName.endsWith(QLatin1String(".pri")) &&
               !(fileName.endsWith(QLatin1String(".so")) || fileName.contains(QLatin1String(".so.")))) {
-                //the endsWith check are here because there were wrongly commited files in the repositories
+                //the endsWith check are here because there were wrongly committed files in the repositories
                 relocateBinary(fileName);
         }
     }
