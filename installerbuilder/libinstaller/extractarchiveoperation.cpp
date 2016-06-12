@@ -85,7 +85,7 @@ bool ExtractArchiveOperation::performOperation()
     if (QThreadPool::globalInstance()->tryStart(runnable)) {
         loop.exec();
     } else {
-        // in case there is no availabe thread we should call it directly this is more a hack
+        // in case there is no available thread we should call it directly this is more a hack
         runnable->run();
         receiver.runnableFinished(true, QString());
     }

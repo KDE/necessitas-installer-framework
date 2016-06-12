@@ -352,7 +352,7 @@ void PackageManagerCorePrivate::clearUpdaterComponentLists()
     const QList<QPair<Component*, Component*> > list = m_componentsToReplaceUpdaterMode.values();
     for (int i = 0; i < list.count(); ++i) {
         if (usedComponents.contains(list.at(i).second))
-            qWarning() << "a replaceme was allready in the list - is that correct?";
+            qWarning() << "a replaceme was already in the list - is that correct?";
         else
             usedComponents.insert(list.at(i).second);
     }
